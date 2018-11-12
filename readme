@@ -3,3 +3,5 @@ tars-demo
 
 目前计划：
 整理基础类，搭建主框架，忽略监控，日志等不必要模块
+
+1.prepare epoll modle
