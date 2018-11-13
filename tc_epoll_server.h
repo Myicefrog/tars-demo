@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "tc_epoller.h"
+
 using namespace std;
 
 namespace tars
@@ -24,13 +26,20 @@ public:
 	public:
 		NetThread(TC_EpollServer *epollServer);
 		virtual ~NetThread();	
+
 		int bind(string& ip, int& port);
 		static void parseAddr(const string &sAddr, struct in_addr &stAddr);
+
+		void createEpoll(uint32_t iIndex = 0);
 	private:
 		TC_EpollServer            *_epollServer;
+
 		int _shutdown_sock;
 		int _notify_sock;
+
 		int _sock;
+
+		TC_Epoller                  _epoller;
 	};
 private:
 	std::vector<NetThread*>        _netThreads;

@@ -13,11 +13,13 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/epoll.h>
 
 using namespace std;
 
 namespace tars
 {
+#define H64(x) (((uint64_t)x) << 32)
 
 TC_EpollServer::TC_EpollServer(unsigned int iNetThreadNum)
 {
@@ -74,18 +76,67 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 	bindAddr.sin_family   = iDomain;
 	bindAddr.sin_port     = htons(port);
 
-	parseAddr(sServerAddr, bindAddr.sin_addr);	
+	parseAddr(ip, bindAddr.sin_addr);	
 
 	//如果服务器终止后,服务器可以第二次快速启动而不用等待一段时间
 	int iReuseAddr = 1;
 
 	setSockOpt(SO_REUSEADDR, (const void *)&iReuseAddr, sizeof(int), SOL_SOCKET);
 	
-	if(::bind(_sock, pstBindAddr, iAddrLen) < 0)
+	if(::bind(_sock, (struct sockaddr *)(&bindAddr), sizeof(bindAddr)) < 0)
 	{
 		cout<<"bind error"<<endl;
 	}
+
+	int iConnBackLog = 1024;	
+	if (::listen(_sock, iConnBackLog) < 0)
+	{
+		cout<<"listen error"<<endl;
+	}
 	
+	int flag = 1;
+	if(setSockOpt(SO_KEEPALIVE, (char*)&flag, int(sizeof(int)), SOL_SOCKET) == -1)
+	{
+		cout<<"setKeepAlive] error"<<endl;
+	}
+
+	flag=1;
+	if(setSockOpt(TCP_NODELAY, (char*)&flag, int(sizeof(int)), IPPROTO_TCP) == -1)
+	{
+		cout<<"[TC_Socket::setTcpNoDelay] error"<<endl;
+	}
+
+	linger stLinger;
+	stLinger.l_onoff = 1;  //在close socket调用后, 但是还有数据没发送完毕的时候容许逗留
+	stLinger.l_linger = 0; //容许逗留的时间为0秒
+
+	if(setSockOpt(SO_LINGER, (const void *)&stLinger, sizeof(linger), SOL_SOCKET) == -1)
+	{
+		cout<<"[TC_Socket::setNoCloseWait] error"<<endl;
+	}	
+
+
+	int val = 0;
+	bool bBlock = false;
+
+	if ((val = fcntl(_sock, F_GETFL, 0)) == -1)
+	{
+		cout<<"[TC_Socket::setblock] fcntl [F_GETFL] error"<<endl;
+	}
+
+	if(!bBlock)
+	{
+		val |= O_NONBLOCK;
+	}
+	else
+	{
+		val &= ~O_NONBLOCK;
+	}
+
+	if (fcntl(fd, F_SETFL, val) == -1)
+	{
+		cout<<"[TC_Socket::setblock] fcntl [F_SETFL] error"<<endl;
+	}
 	return _sock;
 }
 
@@ -117,8 +168,15 @@ void TC_EpollServer::NetThread::parseAddr(const string &sAddr, struct in_addr &s
 	}
 }
 
-};
+void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
+{
+	_epoller.create(10240);
+	
+	_epoller.add(_shutdown_sock, H64(ET_CLOSE), EPOLLIN);
+        _epoller.add(_notify_sock, H64(ET_NOTIFY), EPOLLIN);	
+
+	_epoller.add(_sock, H64(ET_LISTEN) | kv.first, EPOLLIN);	
+}
 
 }
 
-#endif
