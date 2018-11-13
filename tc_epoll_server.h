@@ -31,6 +31,15 @@ public:
 		static void parseAddr(const string &sAddr, struct in_addr &stAddr);
 
 		void createEpoll(uint32_t iIndex = 0);
+
+		enum
+        	{
+            		ET_LISTEN = 1,
+            		ET_CLOSE  = 2,
+            		ET_NOTIFY = 3,
+            		ET_NET    = 0,
+        	};
+
 	private:
 		TC_EpollServer            *_epollServer;
 

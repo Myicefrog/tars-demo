@@ -1,5 +1,6 @@
 #include "tc_epoll_server.h"
 
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -23,7 +24,7 @@ namespace tars
 
 TC_EpollServer::TC_EpollServer(unsigned int iNetThreadNum)
 {
-	for (size_t i = 0; i < _netThreadNum; ++i)
+	for (size_t i = 0; i < iNetThreadNum; ++i)
 	{
 		TC_EpollServer::NetThread* netThreads = new TC_EpollServer::NetThread(this);
 		_netThreads.push_back(netThreads);
@@ -81,7 +82,7 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 	//如果服务器终止后,服务器可以第二次快速启动而不用等待一段时间
 	int iReuseAddr = 1;
 
-	setSockOpt(SO_REUSEADDR, (const void *)&iReuseAddr, sizeof(int), SOL_SOCKET);
+	setsockopt(_sock, SOL_SOCKET, SO_REUSEADDR, (const void *)&iReuseAddr, sizeof(int));
 	
 	if(::bind(_sock, (struct sockaddr *)(&bindAddr), sizeof(bindAddr)) < 0)
 	{
@@ -95,13 +96,13 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 	}
 	
 	int flag = 1;
-	if(setSockOpt(SO_KEEPALIVE, (char*)&flag, int(sizeof(int)), SOL_SOCKET) == -1)
+	if(setsockopt(_sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == -1)
 	{
 		cout<<"setKeepAlive] error"<<endl;
 	}
 
 	flag=1;
-	if(setSockOpt(TCP_NODELAY, (char*)&flag, int(sizeof(int)), IPPROTO_TCP) == -1)
+	if(setsockopt(_sock, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == -1)
 	{
 		cout<<"[TC_Socket::setTcpNoDelay] error"<<endl;
 	}
@@ -110,7 +111,7 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 	stLinger.l_onoff = 1;  //在close socket调用后, 但是还有数据没发送完毕的时候容许逗留
 	stLinger.l_linger = 0; //容许逗留的时间为0秒
 
-	if(setSockOpt(SO_LINGER, (const void *)&stLinger, sizeof(linger), SOL_SOCKET) == -1)
+	if(setsockopt(_sock, SOL_SOCKET, SO_LINGER, (const void *)&stLinger, sizeof(linger)) == -1)
 	{
 		cout<<"[TC_Socket::setNoCloseWait] error"<<endl;
 	}	
@@ -133,10 +134,12 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 		val &= ~O_NONBLOCK;
 	}
 
-	if (fcntl(fd, F_SETFL, val) == -1)
+	if (fcntl(_sock, F_SETFL, val) == -1)
 	{
 		cout<<"[TC_Socket::setblock] fcntl [F_SETFL] error"<<endl;
 	}
+
+
 	return _sock;
 }
 
@@ -175,7 +178,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 	_epoller.add(_shutdown_sock, H64(ET_CLOSE), EPOLLIN);
         _epoller.add(_notify_sock, H64(ET_NOTIFY), EPOLLIN);	
 
-	_epoller.add(_sock, H64(ET_LISTEN) | kv.first, EPOLLIN);	
+	_epoller.add(_sock, H64(ET_LISTEN) | _sock, EPOLLIN);	
 }
 
 }
