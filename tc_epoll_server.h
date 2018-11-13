@@ -21,6 +21,8 @@ class TC_EpollServer
 public:
 	TC_EpollServer(unsigned int iNetThreadNum = 1);
 	~TC_EpollServer();
+
+
 	class NetThread
 	{
 	public:
@@ -50,6 +52,9 @@ public:
 
 		TC_Epoller                  _epoller;
 	};
+
+public:
+	vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
 private:
 	std::vector<NetThread*>        _netThreads;
 };

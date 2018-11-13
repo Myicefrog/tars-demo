@@ -6,6 +6,8 @@ using namespace tars;
 
 int main()
 {
-	TC_EpollServer epoll_server(1);
+
+	TC_EpollServer  _epollServer(1);
+
 	return 0;
 }
