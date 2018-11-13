@@ -19,6 +19,7 @@ TC_EpollServer::~TC_EpollServer()
 }
 
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
+: _epollServer(epollServer)
 {
 	//_shutdown.createSocket();
 	//_notify.createSocket();

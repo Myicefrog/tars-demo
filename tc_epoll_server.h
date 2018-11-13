@@ -12,16 +12,21 @@ namespace tars
 
 class TC_EpollServer
 {
+public:
+	TC_EpollServer(unsigned int iNetThreadNum = 1);
+	~TC_EpollServer();
+	class NetThread
+	{
 	public:
-		TC_EpollServer(unsigned int iNetThreadNum = 1);
-		~TC_EpollServer();
-		class NetThread
-		{
-			NetThread(TC_EpollServer *epollServer);
-			virtual ~NetThread();	
-		};
+		NetThread(TC_EpollServer *epollServer);
+		virtual ~NetThread();	
 	private:
-		std::vector<NetThread*>        _netThreads;
+		TC_EpollServer            *_epollServer;
+		int _shutdown_sock;
+		int _notify_sock;
+	};
+private:
+	std::vector<NetThread*>        _netThreads;
 };
 
 }
