@@ -57,7 +57,11 @@ public:
 
 		int _sock;
 
+		int ifd;		
+
 		TC_Epoller                  _epoller;
+
+		string              _recvbuffer;
 	};
 
 public:

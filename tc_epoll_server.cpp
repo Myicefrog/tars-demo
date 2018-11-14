@@ -228,10 +228,7 @@ bool TC_EpollServer::NetThread::accept(int fd)
 
 	socklen_t iSockAddrSize = sizeof(sockaddr_in);	
 
-	int ifd;
-
-	while((ifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, iSockAddrSize)) < 0 
-		&& errno == EINTR);
+	while((ifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, &iSockAddrSize)) < 0 && errno == EINTR);
 	
 	if(ifd > 0)
 	{
@@ -305,6 +302,48 @@ bool TC_EpollServer::NetThread::accept(int fd)
 		return true;
 	}
 	return true;
+}
+
+void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
+{
+	uint32_t uid = ev.data.u32;	
+
+	if (ev.events & EPOLLERR || ev.events & EPOLLHUP)
+	{
+		cout<<"should delet connection"<<endl;
+		return;
+	}
+
+	if(ev.events & EPOLLIN)
+	{
+		while(true)
+		{
+			char buffer[32*1024];
+			int iBytesReceived = 0;
+			
+			iBytesReceived = ::read(ifd, (void*)buffer, sizeof(buffer));
+			
+			if(iBytesReceived < 0)
+			{
+				if(errno == EAGAIN)
+				{
+					break;
+				}
+				else
+				{
+					cout<<"client close"<<endl;
+					return ;
+				}
+			}
+			else if( iBytesReceived == 0 )
+			{
+				cout<<"1 client close"<<endl;
+				return ;
+			}
+
+			_recvbuffer.append(buffer, iBytesReceived);
+		}
+	}
 }
 
 }
