@@ -211,6 +211,7 @@ void TC_EpollServer::NetThread::run()
 				cout<<"ET_CLOSE"<<endl;
 				break;
 			case ET_NOTIFY:
+				processPipe();
 				cout<<"ET_NOTIFY"<<endl;	
 			case ET_NET:
 				processNet(ev);
@@ -342,9 +343,24 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 			}
 
 			_recvbuffer.append(buffer, iBytesReceived);
+
+			response = "hello";
+			
+			_epoller.mod(_notify_sock, H64(ET_NOTIFY), EPOLLOUT);
 		}
 	}
+
+	if (ev.events & EPOLLOUT)
+	{
+		cout<<"need to send data"<<endl;
+	}	
 }
+
+void TC_EpollServer::NetThread::processPipe()
+{
+	 int bytes = ::send(ifd, response.c_str(), response.size(), 0);
+}
+
 
 }
 

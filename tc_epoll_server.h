@@ -41,6 +41,8 @@ public:
 
 		void processNet(const epoll_event &ev);
 
+		void processPipe();
+
 		enum
         	{
             		ET_LISTEN = 1,
@@ -62,6 +64,8 @@ public:
 		TC_Epoller                  _epoller;
 
 		string              _recvbuffer;
+
+		string              response;
 	};
 
 public:
