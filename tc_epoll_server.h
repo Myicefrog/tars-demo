@@ -30,9 +30,16 @@ public:
 		virtual ~NetThread();	
 
 		int bind(string& ip, int& port);
+
+		void run();		
+
 		static void parseAddr(const string &sAddr, struct in_addr &stAddr);
 
 		void createEpoll(uint32_t iIndex = 0);
+
+		bool accept(int fd);
+
+		void processNet(const epoll_event &ev);
 
 		enum
         	{

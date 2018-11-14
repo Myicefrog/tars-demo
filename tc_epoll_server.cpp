@@ -181,5 +181,131 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 	_epoller.add(_sock, H64(ET_LISTEN) | _sock, EPOLLIN);	
 }
 
+void TC_EpollServer::NetThread::run()
+{
+	while(true)
+	{
+		int iEvNum = _epoller.wait(2000);
+	
+		for(int i = 0; i < iEvNum; ++i)
+		{
+			const epoll_event &ev = _epoller.get(i);	
+
+			uint32_t h = ev.data.u64 >> 32;
+
+			switch(h)
+			{
+			case ET_LISTEN:
+				{
+					if(ev.events & EPOLLIN)
+					{
+						bool ret;
+						do
+						{
+							ret = accept(ev.data.u32);
+						}while(ret);
+					}
+				}
+				break;
+			case ET_CLOSE:
+				cout<<"ET_CLOSE"<<endl;
+				break;
+			case ET_NOTIFY:
+				cout<<"ET_NOTIFY"<<endl;	
+			case ET_NET:
+				processNet(ev);
+				break;
+			default:
+				assert(true);
+			}
+		}
+	}
+}
+
+bool TC_EpollServer::NetThread::accept(int fd)
+{
+	struct sockaddr_in stSockAddr;
+
+	socklen_t iSockAddrSize = sizeof(sockaddr_in);	
+
+	int ifd;
+
+	while((ifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, iSockAddrSize)) < 0 
+		&& errno == EINTR);
+	
+	if(ifd > 0)
+	{
+		string  ip;
+		
+		uint16_t port;
+
+		char sAddr[INET_ADDRSTRLEN] = "\0";
+
+		struct sockaddr_in *p = (struct sockaddr_in *)&stSockAddr;
+
+		inet_ntop(AF_INET, &p->sin_addr, sAddr, sizeof(sAddr));
+
+		ip      = sAddr;
+		port    = ntohs(p->sin_port);
+
+		//setblock
+		int val = 0;
+		int bBlock = false;
+		if((val = fcntl(ifd, F_GETFL, 0)) == -1)	
+		{
+			cout<<"F_GETFL error"<<endl;
+		}	
+		
+		if(!bBlock)
+		{
+			val |= O_NONBLOCK;
+		}
+		else
+		{
+			val &= ~O_NONBLOCK;
+		}
+
+		if(fcntl(ifd, F_SETFL, val) == -1)
+		{
+			cout<<"F_SETFL error"<<endl;
+		}
+
+		//keepAlive
+		int flag = 1;
+    		if(setsockopt(ifd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == -1)
+		{
+			cout<<"[TC_Socket::setKeepAlive] error"<<endl;
+		}
+
+		//nodelay
+		if(setsockopt(ifd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == -1)
+		{
+			cout<<"[TC_Socket::setTcpNoDelay] error"<<endl;
+		}
+
+		//closeWait
+		linger stLinger;
+		stLinger.l_onoff  = 0;
+		stLinger.l_linger = 0;
+
+		if(setsockopt(ifd, SOL_SOCKET, SO_LINGER, (const void *)&stLinger, sizeof(linger)) == -1)
+		{
+			cout<<"[TC_Socket::setCloseWaitDefault] error"<<endl;
+		}
+
+		_epoller.add(ifd, 0, EPOLLIN | EPOLLOUT);
+
+	}
+	else
+	{
+		if(errno == EAGAIN)
+		{
+			return false;
+		}
+		return true;
+	}
+	return true;
+}
+
 }
 
