@@ -241,12 +241,16 @@ bool TC_EpollServer::NetThread::accept(int fd)
 
 	socklen_t iSockAddrSize = sizeof(sockaddr_in);	
 
-	while((ifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, &iSockAddrSize)) < 0 && errno == EINTR);
+	int iifd;
 
-	cout<<"accept fd is "<<ifd<<endl;
+	while((iifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, &iSockAddrSize)) < 0 && errno == EINTR);
+
+	cout<<"accept fd is "<<iifd<<endl;
 	
-	if(ifd > 0)
+	if(iifd > 0)
 	{
+		ifd = iifd;
+
 		string  ip;
 		
 		uint16_t port;
@@ -337,6 +341,12 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 			int iBytesReceived = 0;
 			
 			iBytesReceived = ::read(ifd, (void*)buffer, sizeof(buffer));
+
+			cout<<"iBytesReceived is "<<iBytesReceived<<endl;
+
+			cout<<"::read ifd is "<<ifd<<endl;
+
+			cout<<"receive buffer is "<<buffer<<endl;
 			
 			if(iBytesReceived < 0)
 			{
@@ -371,8 +381,16 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 }
 
 void TC_EpollServer::NetThread::processPipe()
-{
-	 int bytes = ::send(ifd, response.c_str(), response.size(), 0);
+{	
+	cout<<"processPipe"<<endl;
+
+	cout<<"send ifd is "<<ifd<<endl;
+
+	cout<<"response is "<<response<<endl;
+
+	int bytes = ::send(ifd, response.c_str(), response.size(), 0);
+
+	cout<<"send byte is "<<bytes<<endl;
 }
 
 

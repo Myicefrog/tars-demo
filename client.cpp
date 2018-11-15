@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     	//向服务器发起连接,连接成功后client_socket代表了客户机和服务器的一个socket连接
     	if(connect(sockfd,(struct sockaddr*)&server_addr, server_addr_length) < 0)
     	{
-        	printf("Can Not Connect To %s!\n",argv[1]);
+        	printf("Can Not Connect!\n");
         	exit(1);
     	}
 	
@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
         	write( sockfd, sendBuf, sizeof( sendBuf ) );
         	read( sockfd, recvBuf, sizeof( recvBuf ) );
         	fputs( recvBuf, stdout );
+		printf("\n");
         	memset( sendBuf, 0, sizeof( sendBuf ) );
         	memset( recvBuf, 0, sizeof( recvBuf ) );
    	}
