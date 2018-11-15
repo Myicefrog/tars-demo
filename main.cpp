@@ -12,6 +12,7 @@ int main()
 	string ip = "127.0.0.1";
 	int port = 9877;
 	vNetThread[0]->bind(ip,port);
+	vNetThread[0]->createEpoll(1);
 	vNetThread[0]->run();
 	return 0;
 }

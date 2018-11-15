@@ -89,12 +89,16 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 		cout<<"bind error"<<endl;
 	}
 
+	cout<<"already bind"<<endl;
+
 	int iConnBackLog = 1024;	
 	if (::listen(_sock, iConnBackLog) < 0)
 	{
 		cout<<"listen error"<<endl;
 	}
 	
+	cout<<"alreay listen fd "<<_sock<<endl;
+
 	int flag = 1;
 	if(setsockopt(_sock, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == -1)
 	{
@@ -183,6 +187,9 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 
 void TC_EpollServer::NetThread::run()
 {
+
+	cout<<"NetThread run"<<endl;
+
 	while(true)
 	{
 		int iEvNum = _epoller.wait(2000);
@@ -193,9 +200,12 @@ void TC_EpollServer::NetThread::run()
 
 			uint32_t h = ev.data.u64 >> 32;
 
+			cout<<"epoll h is "<<h<<endl;
+
 			switch(h)
 			{
 			case ET_LISTEN:
+				cout<<"ET_LISTEN"<<endl;
 				{
 					if(ev.events & EPOLLIN)
 					{
@@ -211,9 +221,11 @@ void TC_EpollServer::NetThread::run()
 				cout<<"ET_CLOSE"<<endl;
 				break;
 			case ET_NOTIFY:
-				processPipe();
 				cout<<"ET_NOTIFY"<<endl;	
+				processPipe();
+				break;
 			case ET_NET:
+				cout<<"ET_NET"<<endl;
 				processNet(ev);
 				break;
 			default:
@@ -230,6 +242,8 @@ bool TC_EpollServer::NetThread::accept(int fd)
 	socklen_t iSockAddrSize = sizeof(sockaddr_in);	
 
 	while((ifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, &iSockAddrSize)) < 0 && errno == EINTR);
+
+	cout<<"accept fd is "<<ifd<<endl;
 	
 	if(ifd > 0)
 	{
