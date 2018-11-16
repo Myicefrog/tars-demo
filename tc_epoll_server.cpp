@@ -182,6 +182,8 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 	_epoller.add(_shutdown_sock, H64(ET_CLOSE), EPOLLIN);
         _epoller.add(_notify_sock, H64(ET_NOTIFY), EPOLLIN);	
 
+	cout<<"H64(ET_LISTEN) | _sock is "<< (H64(ET_LISTEN) | _sock) <<endl;
+
 	_epoller.add(_sock, H64(ET_LISTEN) | _sock, EPOLLIN);	
 }
 
@@ -199,7 +201,13 @@ void TC_EpollServer::NetThread::run()
 			const epoll_event &ev = _epoller.get(i);	
 
 			uint32_t h = ev.data.u64 >> 32;
+			
+			cout<<"ev.data.u64 is "<<ev.data.u64<<endl;
 
+			cout<<"ev.data.u32 is "<<ev.data.u32<<endl;
+
+			cout<<"ev.data.fd is "<<ev.data.fd<<endl;
+			
 			cout<<"epoll h is "<<h<<endl;
 
 			switch(h)
@@ -245,11 +253,13 @@ bool TC_EpollServer::NetThread::accept(int fd)
 
 	while((iifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, &iSockAddrSize)) < 0 && errno == EINTR);
 
-	cout<<"accept fd is "<<iifd<<endl;
+	cout<<"accept _sock is "<<_sock<<" fd is "<<fd<<endl;
+
+	cout<<"accept iifd is "<<iifd<<endl;
 	
 	if(iifd > 0)
 	{
-		ifd = iifd;
+		_listen_connect_id[fd] = iifd;	
 
 		string  ip;
 		
@@ -267,7 +277,7 @@ bool TC_EpollServer::NetThread::accept(int fd)
 		//setblock
 		int val = 0;
 		int bBlock = false;
-		if((val = fcntl(ifd, F_GETFL, 0)) == -1)	
+		if((val = fcntl(iifd, F_GETFL, 0)) == -1)	
 		{
 			cout<<"F_GETFL error"<<endl;
 		}	
@@ -281,20 +291,20 @@ bool TC_EpollServer::NetThread::accept(int fd)
 			val &= ~O_NONBLOCK;
 		}
 
-		if(fcntl(ifd, F_SETFL, val) == -1)
+		if(fcntl(iifd, F_SETFL, val) == -1)
 		{
 			cout<<"F_SETFL error"<<endl;
 		}
 
 		//keepAlive
 		int flag = 1;
-    		if(setsockopt(ifd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == -1)
+    		if(setsockopt(iifd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == -1)
 		{
 			cout<<"[TC_Socket::setKeepAlive] error"<<endl;
 		}
 
 		//nodelay
-		if(setsockopt(ifd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == -1)
+		if(setsockopt(iifd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == -1)
 		{
 			cout<<"[TC_Socket::setTcpNoDelay] error"<<endl;
 		}
@@ -304,12 +314,12 @@ bool TC_EpollServer::NetThread::accept(int fd)
 		stLinger.l_onoff  = 0;
 		stLinger.l_linger = 0;
 
-		if(setsockopt(ifd, SOL_SOCKET, SO_LINGER, (const void *)&stLinger, sizeof(linger)) == -1)
+		if(setsockopt(iifd, SOL_SOCKET, SO_LINGER, (const void *)&stLinger, sizeof(linger)) == -1)
 		{
 			cout<<"[TC_Socket::setCloseWaitDefault] error"<<endl;
 		}
 
-		_epoller.add(ifd, 0, EPOLLIN | EPOLLOUT);
+		_epoller.add(iifd, 0, EPOLLIN | EPOLLOUT);
 
 	}
 	else
@@ -327,6 +337,14 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 {
 	uint32_t uid = ev.data.u32;	
 
+	int fd = uid;
+
+	//int fd = _listen_connect_id[uid];
+
+	//cout<<"processNet uid is "<<uid<<" connect fd is "<<fd<<endl;
+
+	cout<<"processNet uid is "<<uid<<endl;
+
 	if (ev.events & EPOLLERR || ev.events & EPOLLHUP)
 	{
 		cout<<"should delet connection"<<endl;
@@ -340,11 +358,11 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 			char buffer[32*1024];
 			int iBytesReceived = 0;
 			
-			iBytesReceived = ::read(ifd, (void*)buffer, sizeof(buffer));
+			iBytesReceived = ::read(fd, (void*)buffer, sizeof(buffer));
 
 			cout<<"iBytesReceived is "<<iBytesReceived<<endl;
 
-			cout<<"::read ifd is "<<ifd<<endl;
+			cout<<"::read fd is "<<fd<<endl;
 
 			cout<<"receive buffer is "<<buffer<<endl;
 			

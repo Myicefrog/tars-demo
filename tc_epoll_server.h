@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
+
 
 #include "tc_epoller.h"
 
@@ -66,6 +68,8 @@ public:
 		string              _recvbuffer;
 
 		string              response;
+
+		map<int,int>        _listen_connect_id;
 	};
 
 public:
