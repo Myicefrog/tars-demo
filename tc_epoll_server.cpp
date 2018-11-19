@@ -181,6 +181,9 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 	
 	_epoller.create(10240);
 	
+	cout<<"H64(ET_CLOSE) is "<<H64(ET_CLOSE)<<endl;
+	cout<<"H64(ET_NOTIFY) is "<<H64(ET_NOTIFY)<<endl;
+
 	_epoller.add(_shutdown_sock, H64(ET_CLOSE), EPOLLIN);
         _epoller.add(_notify_sock, H64(ET_NOTIFY), EPOLLIN);	
 
