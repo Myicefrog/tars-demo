@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 
 
 #include "tc_epoller.h"
@@ -53,6 +54,12 @@ public:
             		ET_NET    = 0,
         	};
 
+		struct
+		{
+			string response;
+			uint32_t uid;	
+		}_response;
+
 	private:
 		TC_EpollServer            *_epollServer;
 
@@ -70,6 +77,10 @@ public:
 		string              response;
 
 		map<int,int>        _listen_connect_id;
+
+		list<uint32_t>                  _free;
+
+		volatile size_t                 _free_size;
 	};
 
 public:

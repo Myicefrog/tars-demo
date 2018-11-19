@@ -177,6 +177,8 @@ void TC_EpollServer::NetThread::parseAddr(const string &sAddr, struct in_addr &s
 
 void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 {
+	int _total = 200000;
+	
 	_epoller.create(10240);
 	
 	_epoller.add(_shutdown_sock, H64(ET_CLOSE), EPOLLIN);
@@ -185,6 +187,14 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 	cout<<"H64(ET_LISTEN) | _sock is "<< (H64(ET_LISTEN) | _sock) <<endl;
 
 	_epoller.add(_sock, H64(ET_LISTEN) | _sock, EPOLLIN);	
+
+	for(uint32_t i = 1; i <= _total; i++)
+	{
+
+		_free.push_back(i);
+
+		++_free_size;
+	}
 }
 
 void TC_EpollServer::NetThread::run()
@@ -259,7 +269,6 @@ bool TC_EpollServer::NetThread::accept(int fd)
 	
 	if(iifd > 0)
 	{
-		_listen_connect_id[fd] = iifd;	
 
 		string  ip;
 		
@@ -319,7 +328,16 @@ bool TC_EpollServer::NetThread::accept(int fd)
 			cout<<"[TC_Socket::setCloseWaitDefault] error"<<endl;
 		}
 
-		_epoller.add(iifd, 0, EPOLLIN | EPOLLOUT);
+
+		uint32_t uid = _free.front();
+
+		_free.pop_front();
+
+		--_free_size;
+
+		_listen_connect_id[uid] = iifd;	
+
+		_epoller.add(iifd, uid, EPOLLIN | EPOLLOUT);
 
 	}
 	else
@@ -335,15 +353,14 @@ bool TC_EpollServer::NetThread::accept(int fd)
 
 void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 {
+
 	uint32_t uid = ev.data.u32;	
 
-	int fd = uid;
-
-	//int fd = _listen_connect_id[uid];
+	int fd = _listen_connect_id[uid];
 
 	//cout<<"processNet uid is "<<uid<<" connect fd is "<<fd<<endl;
 
-	cout<<"processNet uid is "<<uid<<endl;
+	cout<<"processNet uid is "<<uid<<" fd is "<<fd<<endl;
 
 	if (ev.events & EPOLLERR || ev.events & EPOLLHUP)
 	{
@@ -386,7 +403,8 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 			_recvbuffer.append(buffer, iBytesReceived);
 
-			response = "hello";
+			_response.response = "hello";
+			_response.uid = uid;
 			
 			_epoller.mod(_notify_sock, H64(ET_NOTIFY), EPOLLOUT);
 		}
@@ -400,13 +418,17 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 void TC_EpollServer::NetThread::processPipe()
 {	
-	cout<<"processPipe"<<endl;
+        uint32_t uid = _response.uid;
 
-	cout<<"send ifd is "<<ifd<<endl;
+        int fd = _listen_connect_id[uid];
 
-	cout<<"response is "<<response<<endl;
+        //cout<<"processNet uid is "<<uid<<" connect fd is "<<fd<<endl;
 
-	int bytes = ::send(ifd, response.c_str(), response.size(), 0);
+        cout<<"processPipe uid is "<<uid<<" fd is "<<fd<<endl;
+
+	cout<<"response is "<<_response.response<<endl;
+
+	int bytes = ::send(fd, _response.response.c_str(), _response.response.size(), 0);
 
 	cout<<"send byte is "<<bytes<<endl;
 }
