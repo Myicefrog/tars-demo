@@ -53,6 +53,9 @@ TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
 	{
 		cout<<"_notify_sock invalid"<<endl;
 	}
+
+	_response.response="";
+	_response.uid = 0;
 }
 
 TC_EpollServer::NetThread::~NetThread()
@@ -208,6 +211,8 @@ void TC_EpollServer::NetThread::run()
 	while(true)
 	{
 		int iEvNum = _epoller.wait(2000);
+	
+		cout<<"iEvNum is "<<iEvNum<<endl;
 	
 		for(int i = 0; i < iEvNum; ++i)
 		{
