@@ -13,6 +13,7 @@
 
 
 #include "tc_epoller.h"
+#include "tc_socket.h"
 
 using namespace std;
 
@@ -35,8 +36,6 @@ public:
 		int bind(string& ip, int& port);
 
 		void run();		
-
-		static void parseAddr(const string &sAddr, struct in_addr &stAddr);
 
 		void createEpoll(uint32_t iIndex = 0);
 
@@ -63,12 +62,10 @@ public:
 	private:
 		TC_EpollServer            *_epollServer;
 
-		int _shutdown_sock;
-		int _notify_sock;
+		TC_Socket                   _shutdown;
+	 	TC_Socket                   _notify;
 
-		int _sock;
-
-		int ifd;		
+		TC_Socket                   _bind_listen;
 
 		TC_Epoller                  _epoller;
 

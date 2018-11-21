@@ -62,28 +62,33 @@ int main() {
         perror("epoll_create failed.\n");
         return 1;
     }
-    event.events = EPOLLIN;
-    event.data.fd = server_fd;
-    ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
-    if(ret == -1) {
-        perror("epoll_ctl failed.\n");
-        return 1;
-    }
 
     int iSocketType = SOCK_STREAM;
     int iDomain = AF_INET;
     int _shutdown_sock = socket(iDomain, iSocketType, 0);
     int _notify_sock = socket(iDomain, iSocketType, 0);
 
-    event1.events = EPOLLIN;
-    event2.events = EPOLLIN;
+
+    //ET 模式 只通知一次
+    //LT 模式 一直通知
+    event1.events = EPOLLIN | EPOLLET;
+    event2.events = EPOLLIN | EPOLLET;
     ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _shutdown_sock, &event1);
     ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, _notify_sock, &event2);
+
+    event.events = EPOLLIN;
+    event.data.fd = server_fd;
+    ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
+
+    if(ret == -1) {
+        perror("epoll_ctl failed.\n");
+        return 1;
+    }
 
 
 
     while(1) {
-        ready_count = epoll_wait(epoll_fd, event_array, MAX_EVENT_COUNT, -1);
+        ready_count = epoll_wait(epoll_fd, event_array, MAX_EVENT_COUNT, 200);
         if(ready_count == -1) {
             perror("epoll_wait failed.\n");
             return 1;
