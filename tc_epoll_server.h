@@ -14,6 +14,7 @@
 
 #include "tc_epoller.h"
 #include "tc_socket.h"
+#include "tc_thread.h"
 
 using namespace std;
 
@@ -79,6 +80,43 @@ public:
 
 		volatile size_t                 _free_size;
 	};
+
+    class Handle : public TC_Thread, public TC_ThreadLock
+    {
+    public:
+
+        Handle();
+
+        virtual ~Handle();
+
+        void setEpollServer(TC_EpollServer *pEpollServer);
+
+        TC_EpollServer* getEpollServer();
+
+        virtual void run();
+
+    public:
+
+        void sendResponse(unsigned int uid, const string &sSendBuffer, const string &ip, int port, int fd);
+
+        void close(unsigned int uid, int fd);
+
+        void setWaitTime(uint32_t iWaitTime);
+
+        virtual void initialize() {};
+
+        virtual void notifyFilter();
+
+    protected:
+
+        TC_EpollServer  *_pEpollServer;
+
+        uint32_t  _iWaitTime;
+
+        vector<Handle>           handles;
+
+    };
+
 
 public:
 	vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
