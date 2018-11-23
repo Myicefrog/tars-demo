@@ -322,6 +322,8 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 	if(ev.events & EPOLLIN)
 	{
+            recv_queue::queue_type vRecvData;
+
 		while(true)
 		{
 			char buffer[32*1024];
@@ -355,11 +357,29 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 			_recvbuffer.append(buffer, iBytesReceived);
 
-			_response.response = "hello";
-			_response.uid = uid;
-			
-			_epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
 		}
+
+                if(!_recvbuffer.empty())
+                {
+                    tagRecvData* recv = new tagRecvData();
+                    recv->buffer           = std::move(_recvbuffer);
+                    recv->ip               = "";
+                    recv->port             = 0;
+                    recv->recvTimeStamp    = 0;
+                    recv->uid              = uid;
+                    recv->isOverload       = false;
+                    recv->isClosed         = false;
+                    recv->fd               = fd;
+
+                    vRecvData.push_back(recv);
+               }
+
+              if(!vRecvData.empty())
+              {
+                  insertRecvQueue(vRecvData);
+              }
+			//_epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
+
 	}
 
 	if (ev.events & EPOLLOUT)
@@ -370,6 +390,42 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 void TC_EpollServer::NetThread::processPipe()
 {	
+
+    send_queue::queue_type deSendData;
+
+    _sbuffer.swap(deSendData);
+
+    send_queue::queue_type::iterator it = deSendData.begin();
+
+    send_queue::queue_type::iterator itEnd = deSendData.end();
+
+    while(it != itEnd)
+    {
+        switch((*it)->cmd)
+        {
+        case 's':
+            {
+                uint32_t uid = (*it)->uid;
+               
+                int fd = _listen_connect_id[uid];
+
+                cout<<"processPipe uid is "<<uid<<" fd is "<<fd<<endl;
+
+                int bytes = ::send(fd, (*it)->buffer.c_str(), (*it)->buffer.size(), 0);
+
+                cout<<"send byte is "<<bytes<<endl;
+
+                break;
+           }
+        default:
+            assert(false);
+        }
+        delete (*it);
+        ++it;
+    }
+                
+
+/*
         uint32_t uid = _response.uid;
 
         int fd = _listen_connect_id[uid];
@@ -383,8 +439,88 @@ void TC_EpollServer::NetThread::processPipe()
 	int bytes = ::send(fd, _response.response.c_str(), _response.response.size(), 0);
 
 	cout<<"send byte is "<<bytes<<endl;
+*/
 }
 
+TC_EpollServer::Handle::Handle()
+: _pEpollServer(NULL)
+, _iWaitTime(100)
+{
+}
+
+TC_EpollServer::Handle::~Handle()
+{
+}
+
+void TC_EpollServer::Handle::sendResponse(uint32_t uid, const string &sSendBuffer, const string &ip, int port, int fd)
+{
+    //_pEpollServer->send(uid, sSendBuffer, ip, port, fd);
+}
+
+void TC_EpollServer::Handle::close(uint32_t uid, int fd)
+{
+    //_pEpollServer->close(uid, fd);
+}
+
+void TC_EpollServer::Handle::run()
+{
+    initialize();
+
+    handleImp();
+}
+
+void TC_EpollServer::Handle::handleImp()
+{
+    tagRecvData* recv = NULL;
+    while(waitForRecvQueue(recv, 0))
+    {
+        tagRecvData& stRecvData = *recv;
+
+        tagSendData* send = new tagSendData();
+        send->uid = recv->uid;
+        send->cmd = 's';
+        send->buffer = recv->uid;
+        send->ip = recv->ip;
+        send->port = recv->port;
+
+        _sbuffer.push_back(send);
+
+        _epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT); 
+    }
+
+}
+
+bool TC_EpollServer::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
+{
+    bool bRet = false;
+
+    bRet = _rbuffer.pop_front(recv, iWaitTime);
+
+    if(!bRet)
+    {
+        return bRet;
+    }
+
+    return bRet;
+}
+
+void TC_EpollServer::insertRecvQueue(const recv_queue::queue_type &vtRecvData, bool bPushBack)
+{
+    {
+        if (bPushBack)
+        {
+            _rbuffer.push_back(vtRecvData);
+        }
+        else
+        {
+            _rbuffer.push_front(vtRecvData);
+        }
+    }
+
+    //TC_ThreadLock::Lock lock(_handleGroup->monitor);
+
+    //_handleGroup->monitor.notify();
+}
 
 }
 

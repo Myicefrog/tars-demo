@@ -15,6 +15,7 @@
 #include "tc_epoller.h"
 #include "tc_socket.h"
 #include "tc_thread.h"
+#include "tc_thread_queue.h"
 
 using namespace std;
 
@@ -23,9 +24,42 @@ namespace tars
 
 class TC_EpollServer
 {
+
+    struct tagRecvData
+    {
+        uint32_t        uid;            /**连接标示*/
+        string          buffer;         /**需要发送的内容*/
+        string          ip;             /**远程连接的ip*/
+        uint16_t        port;           /**远程连接的端口*/
+        int64_t         recvTimeStamp;  /**接收到数据的时间*/
+        bool            isOverload;     /**是否已过载 */
+        bool            isClosed;       /**是否已关闭*/
+        int                fd;                /*保存产生该消息的fd，用于回包时选择网络线程*/
+       // BindAdapterPtr  adapter;        /**标识哪一个adapter的消息*/
+        int             closeType;     /*如果是关闭消息包，则标识关闭类型,0:表示客户端主动关闭；1:服务端主动关闭;2:连接超时服务端主动关闭*/
+    };
+
+    struct tagSendData
+    {
+        char            cmd;            /**命令:'c',关闭fd; 's',有数据需要发送*/
+        uint32_t        uid;            /**连接标示*/
+        string          buffer;         /**需要发送的内容*/
+        string          ip;             /**远程连接的ip*/
+        uint16_t        port;           /**远程连接的端口*/
+    };
+
+    typedef TC_ThreadQueue<tagRecvData*, deque<tagRecvData*> > recv_queue;
+    typedef TC_ThreadQueue<tagSendData*, deque<tagSendData*> > send_queue;
+    typedef recv_queue::queue_type recv_queue_type;
+
+
 public:
 	TC_EpollServer(unsigned int iNetThreadNum = 1);
 	~TC_EpollServer();
+
+        bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+
+        void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
 
 
 	class NetThread
@@ -101,11 +135,11 @@ public:
 
         void close(unsigned int uid, int fd);
 
-        void setWaitTime(uint32_t iWaitTime);
+//        void setWaitTime(uint32_t iWaitTime);
 
         virtual void initialize() {};
 
-        virtual void notifyFilter();
+//        virtual void notifyFilter();
 
     protected:
 
@@ -115,6 +149,9 @@ public:
 
         vector<Handle>           handles;
 
+   protected:
+
+        virtual void handleImp();
     };
 
 
@@ -122,6 +159,10 @@ public:
 	vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
 private:
 	std::vector<NetThread*>        _netThreads;
+
+        recv_queue      _rbuffer;
+
+	send_queue                  _sbuffer;
 };
 
 }
