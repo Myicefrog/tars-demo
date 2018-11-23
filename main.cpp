@@ -7,9 +7,9 @@ using namespace tars;
 int main()
 {
 
-    TC_EpollServer  _epollServer(1);
+    TC_EpollServer*  _epollServer = new TC_EpollServer(1);
 
-    vector<TC_EpollServer::NetThread*> vNetThread = _epollServer.getNetThread();
+    vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
 
     string ip = "127.0.0.1";
 
@@ -20,8 +20,11 @@ int main()
     vNetThread[0]->createEpoll(1);
     
     TC_EpollServer::Handle handle;
+
+    handle.setEpollServer(_epollServer);   
+
     handle.start();
-   
+
     vNetThread[0]->run();
     return 0;
 }

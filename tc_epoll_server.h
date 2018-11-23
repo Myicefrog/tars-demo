@@ -57,10 +57,6 @@ public:
 	TC_EpollServer(unsigned int iNetThreadNum = 1);
 	~TC_EpollServer();
 
-        bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
-
-        void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
-
 
 	class NetThread
 	{
@@ -94,6 +90,14 @@ public:
 			uint32_t uid;	
 		}_response;
 
+
+                void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
+
+		void send(unsigned int uid, const string &s, const string &ip, uint16_t port);
+             
+		bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+
+
 	private:
 		TC_EpollServer            *_epollServer;
 
@@ -113,6 +117,10 @@ public:
 		list<uint32_t>                  _free;
 
 		volatile size_t                 _free_size;
+
+                recv_queue      _rbuffer;
+
+	        send_queue                  _sbuffer;
 	};
 
     class Handle : public TC_Thread, public TC_ThreadLock
@@ -141,6 +149,8 @@ public:
 
 //        virtual void notifyFilter();
 
+        bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+
     protected:
 
         TC_EpollServer  *_pEpollServer;
@@ -156,13 +166,12 @@ public:
 
 
 public:
-	vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
+    vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
+    
+    void send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd);
+
 private:
 	std::vector<NetThread*>        _netThreads;
-
-        recv_queue      _rbuffer;
-
-	send_queue                  _sbuffer;
 };
 
 }

@@ -35,6 +35,14 @@ TC_EpollServer::~TC_EpollServer()
 {
 }
 
+void TC_EpollServer::send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd)
+{
+
+    _netThreads[0]->send(uid, s, ip, port);
+
+}
+
+
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
 : _epollServer(epollServer)
 {
@@ -442,6 +450,26 @@ void TC_EpollServer::NetThread::processPipe()
 */
 }
 
+void TC_EpollServer::NetThread::send(uint32_t uid, const string &s, const string &ip, uint16_t port)
+{
+    tagSendData* send = new tagSendData();
+
+    send->uid = uid;
+
+    send->cmd = 's';
+
+    send->buffer = s;
+
+    send->ip = ip;
+
+    send->port = port;
+
+    _sbuffer.push_back(send);
+
+    //通知epoll响应, 有数据要发送
+    _epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
+}
+
 TC_EpollServer::Handle::Handle()
 : _pEpollServer(NULL)
 , _iWaitTime(100)
@@ -454,8 +482,18 @@ TC_EpollServer::Handle::~Handle()
 
 void TC_EpollServer::Handle::sendResponse(uint32_t uid, const string &sSendBuffer, const string &ip, int port, int fd)
 {
-    //_pEpollServer->send(uid, sSendBuffer, ip, port, fd);
+    _pEpollServer->send(uid, sSendBuffer, ip, port, fd);
 }
+
+
+bool TC_EpollServer::Handle::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
+{
+
+    vector<TC_EpollServer::NetThread*> netThread = _pEpollServer->getNetThread();
+
+    return netThread[0]->waitForRecvQueue(recv,iWaitTime);
+}
+
 
 void TC_EpollServer::Handle::close(uint32_t uid, int fd)
 {
@@ -474,23 +512,22 @@ void TC_EpollServer::Handle::handleImp()
     tagRecvData* recv = NULL;
     while(waitForRecvQueue(recv, 0))
     {
-        tagRecvData& stRecvData = *recv;
 
-        tagSendData* send = new tagSendData();
-        send->uid = recv->uid;
-        send->cmd = 's';
-        send->buffer = recv->uid;
-        send->ip = recv->ip;
-        send->port = recv->port;
+        _pEpollServer->send(recv->uid,recv->buffer, "0", 0, 0);
 
-        _sbuffer.push_back(send);
-
-        _epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT); 
     }
 
 }
 
-bool TC_EpollServer::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
+void TC_EpollServer::Handle::setEpollServer(TC_EpollServer *pEpollServer)
+{
+    TC_ThreadLock::Lock lock(*this);
+
+    _pEpollServer = pEpollServer;
+}
+
+
+bool TC_EpollServer::NetThread::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
 {
     bool bRet = false;
 
@@ -504,7 +541,7 @@ bool TC_EpollServer::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
     return bRet;
 }
 
-void TC_EpollServer::insertRecvQueue(const recv_queue::queue_type &vtRecvData, bool bPushBack)
+void TC_EpollServer::NetThread::insertRecvQueue(const recv_queue::queue_type &vtRecvData, bool bPushBack)
 {
     {
         if (bPushBack)
