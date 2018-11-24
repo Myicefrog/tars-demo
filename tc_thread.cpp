@@ -70,6 +70,7 @@ void TC_Thread::threadEntry(TC_Thread *pThread)
 
     {
         TC_ThreadLock::Lock sync(pThread->_lock);
+        cout<<"pThread->_lock.notifyAll()"<<endl;
         pThread->_lock.notifyAll();
     }
 
@@ -104,9 +105,7 @@ TC_ThreadControl TC_Thread::start()
         throw TC_ThreadThreadControl_Exception("[TC_Thread::start] thread start error", ret);
     }
 
-
     _lock.wait();
-
 
     return TC_ThreadControl(_tid);
 }

@@ -48,12 +48,13 @@ public:
 
     void wait() const
     {
-    	cout<<"TC_Monitor wait"<<endl;
         notifyImpl(_nnotify);
 
         try
         {
+    	    cout<<"TC_Monitor wait begin"<<endl;
             _cond.wait(_mutex);
+    	    cout<<"TC_Monitor wait end"<<endl;
         }
         catch(...)
         {

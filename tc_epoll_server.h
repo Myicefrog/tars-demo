@@ -121,6 +121,7 @@ public:
                 recv_queue      _rbuffer;
 
 	        send_queue                  _sbuffer;
+        public:
 
                 TC_ThreadLock               monitor;
 	};

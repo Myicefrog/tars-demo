@@ -219,89 +219,6 @@ bool TC_EpollServer::NetThread::accept(int fd)
 		_epoller.add(cs.getfd(), uid, EPOLLIN | EPOLLOUT);
 
 	}
-/*
-	int iifd;
-
-	while((iifd = ::accept(_sock, (struct sockaddr *) &stSockAddr, &iSockAddrSize)) < 0 && errno == EINTR);
-
-	cout<<"accept _sock is "<<_sock<<" fd is "<<fd<<endl;
-
-	cout<<"accept iifd is "<<iifd<<endl;
-	
-	if(iifd > 0)
-	{
-
-		string  ip;
-		
-		uint16_t port;
-
-		char sAddr[INET_ADDRSTRLEN] = "\0";
-
-		struct sockaddr_in *p = (struct sockaddr_in *)&stSockAddr;
-
-		inet_ntop(AF_INET, &p->sin_addr, sAddr, sizeof(sAddr));
-
-		ip      = sAddr;
-		port    = ntohs(p->sin_port);
-
-		//setblock
-		int val = 0;
-		int bBlock = false;
-		if((val = fcntl(iifd, F_GETFL, 0)) == -1)	
-		{
-			cout<<"F_GETFL error"<<endl;
-		}	
-		
-		if(!bBlock)
-		{
-			val |= O_NONBLOCK;
-		}
-		else
-		{
-			val &= ~O_NONBLOCK;
-		}
-
-		if(fcntl(iifd, F_SETFL, val) == -1)
-		{
-			cout<<"F_SETFL error"<<endl;
-		}
-
-		//keepAlive
-		int flag = 1;
-    		if(setsockopt(iifd, SOL_SOCKET, SO_KEEPALIVE, (char*)&flag, int(sizeof(int))) == -1)
-		{
-			cout<<"[TC_Socket::setKeepAlive] error"<<endl;
-		}
-
-		//nodelay
-		if(setsockopt(iifd, IPPROTO_TCP, TCP_NODELAY, (char*)&flag, int(sizeof(int))) == -1)
-		{
-			cout<<"[TC_Socket::setTcpNoDelay] error"<<endl;
-		}
-
-		//closeWait
-		linger stLinger;
-		stLinger.l_onoff  = 0;
-		stLinger.l_linger = 0;
-
-		if(setsockopt(iifd, SOL_SOCKET, SO_LINGER, (const void *)&stLinger, sizeof(linger)) == -1)
-		{
-			cout<<"[TC_Socket::setCloseWaitDefault] error"<<endl;
-		}
-
-
-		uint32_t uid = _free.front();
-
-		_free.pop_front();
-
-		--_free_size;
-
-		_listen_connect_id[uid] = iifd;	
-
-		_epoller.add(iifd, uid, EPOLLIN | EPOLLOUT);
-
-	}
-*/
 	else
 	{
 		if(errno == EAGAIN)
@@ -387,7 +304,6 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
                   cout<<"insertRecvQueue"<<endl;
                   insertRecvQueue(vRecvData);
               }
-			//_epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
 
 	}
 
@@ -434,21 +350,6 @@ void TC_EpollServer::NetThread::processPipe()
     }
                 
 
-/*
-        uint32_t uid = _response.uid;
-
-        int fd = _listen_connect_id[uid];
-
-        //cout<<"processNet uid is "<<uid<<" connect fd is "<<fd<<endl;
-
-        cout<<"processPipe uid is "<<uid<<" fd is "<<fd<<endl;
-
-	cout<<"response is "<<_response.response<<endl;
-
-	int bytes = ::send(fd, _response.response.c_str(), _response.response.size(), 0);
-
-	cout<<"send byte is "<<bytes<<endl;
-*/
 }
 
 void TC_EpollServer::NetThread::send(uint32_t uid, const string &s, const string &ip, uint16_t port)
@@ -515,9 +416,18 @@ void TC_EpollServer::Handle::handleImp()
 
     while(true)
     {
+        {
+            vector<TC_EpollServer::NetThread*> netThread = _pEpollServer->getNetThread();
+
+            TC_ThreadLock::Lock lock(netThread[0]->monitor);
+
+            netThread[0]->monitor.timedWait(100);
+
+        }
 
         while(waitForRecvQueue(recv, 0))
         {
+
             cout<<"handleImp recv uid  is "<<recv->uid<<endl;
             _pEpollServer->send(recv->uid,recv->buffer, "0", 0, 0);
 
@@ -564,7 +474,7 @@ void TC_EpollServer::NetThread::insertRecvQueue(const recv_queue::queue_type &vt
     }
 
     TC_ThreadLock::Lock lock(monitor);
-
+    cout<<"monitor.notify()"<<endl;
     monitor.notify();
 }
 
