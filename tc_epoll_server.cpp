@@ -384,6 +384,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
               if(!vRecvData.empty())
               {
+                  cout<<"insertRecvQueue"<<endl;
                   insertRecvQueue(vRecvData);
               }
 			//_epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
@@ -509,12 +510,18 @@ void TC_EpollServer::Handle::run()
 
 void TC_EpollServer::Handle::handleImp()
 {
+    cout<<"Handle::handleImp"<<endl;
     tagRecvData* recv = NULL;
-    while(waitForRecvQueue(recv, 0))
+
+    while(true)
     {
 
-        _pEpollServer->send(recv->uid,recv->buffer, "0", 0, 0);
+        while(waitForRecvQueue(recv, 0))
+        {
+            cout<<"handleImp recv uid  is "<<recv->uid<<endl;
+            _pEpollServer->send(recv->uid,recv->buffer, "0", 0, 0);
 
+        }
     }
 
 }
@@ -529,6 +536,8 @@ void TC_EpollServer::Handle::setEpollServer(TC_EpollServer *pEpollServer)
 
 bool TC_EpollServer::NetThread::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
 {
+    //cout<<"NetThread::waitForRecvQueue"<<endl;
+
     bool bRet = false;
 
     bRet = _rbuffer.pop_front(recv, iWaitTime);
@@ -554,9 +563,9 @@ void TC_EpollServer::NetThread::insertRecvQueue(const recv_queue::queue_type &vt
         }
     }
 
-    //TC_ThreadLock::Lock lock(_handleGroup->monitor);
+    TC_ThreadLock::Lock lock(monitor);
 
-    //_handleGroup->monitor.notify();
+    monitor.notify();
 }
 
 }

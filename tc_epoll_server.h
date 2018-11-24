@@ -121,6 +121,8 @@ public:
                 recv_queue      _rbuffer;
 
 	        send_queue                  _sbuffer;
+
+                TC_ThreadLock               monitor;
 	};
 
     class Handle : public TC_Thread, public TC_ThreadLock
