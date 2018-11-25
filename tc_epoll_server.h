@@ -16,6 +16,8 @@
 #include "tc_socket.h"
 #include "tc_thread.h"
 #include "tc_thread_queue.h"
+#include "tc_clientsocket.h"
+
 
 using namespace std;
 
@@ -65,6 +67,10 @@ public:
 		virtual ~NetThread();	
 
 		int bind(string& ip, int& port);
+
+        int bind(BindAdapter &lsPtr);
+
+        void bind(const TC_Endpoint &ep, TC_Socket &s);
 
 		void run();		
 
@@ -118,10 +124,14 @@ public:
 
 		volatile size_t                 _free_size;
 
-                recv_queue      _rbuffer;
+        recv_queue      _rbuffer;
 
-	        send_queue                  _sbuffer;
-        public:
+	    send_queue                  _sbuffer;
+
+		map<int, BindAdapter>    _listeners;
+
+        
+    public:
 
                 TC_ThreadLock               monitor;
 	};
@@ -167,11 +177,58 @@ public:
         virtual void handleImp();
     };
 
+    class BindAdapter
+	{
+	public:
+		
+		BindAdapter(){}
+		
+		BindAdapter(TC_EpollServer *pEpollServer);
+
+		~BindAdapter();
+
+        void setEndpoint(const string &str,const int &port);
+
+        TC_Endpoint getEndpoint() const;
+
+        TC_Socket &getSocket();
+
+        TC_EpollServer* getEpollServer();
+
+        void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
+
+        bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+
+        template<typename T> void setHandle()
+		{
+
+		}
+
+    protected:
+        friend class TC_EpollServer;
+        friend class NetThread;
+
+        TC_EpollServer  *_pEpollServer;
+
+        TC_Socket       _s;
+
+        TC_Endpoint     _ep;
+
+        recv_queue      _rbuffer;		
+        
+        TC_ThreadLock               monitor;
+ 
+	};
+
+
+
 
 public:
     vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
     
     void send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd);
+
+    int  TC_EpollServer::bind(TC_EpollServer::BindAdapter &lsPtr);
 
 private:
 	std::vector<NetThread*>        _netThreads;

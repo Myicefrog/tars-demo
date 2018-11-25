@@ -42,6 +42,20 @@ void TC_EpollServer::send(unsigned int uid, const string &s, const string &ip, u
 
 }
 
+int  TC_EpollServer::bind(TC_EpollServer::BindAdapter &lsPtr)
+{
+    int iRet = 0;
+
+    for(size_t i = 0; i < _netThreads.size(); ++i)
+    {
+        if(i == 0)
+        {
+            iRet = _netThreads[i]->bind(lsPtr);
+        }
+    }
+
+    return iRet;
+}
 
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
 : _epollServer(epollServer)
@@ -81,6 +95,38 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 
 	return _bind_listen.getfd();
 
+}
+
+
+int  TC_EpollServer::NetThread::bind(BindAdapter &lsPtr)
+{
+    const TC_Endpoint &ep = lsPtr.getEndpoint();
+
+    TC_Socket& s = lsPtr.getSocket();
+
+    cout<<"bind"<<endl;
+    bind(ep, s);
+
+    _listeners[s.getfd()] = lsPtr;
+
+    return s.getfd();
+}
+
+void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
+{
+    int type = AF_INET;
+
+    s.createSocket(SOCK_STREAM, type);
+    
+    s.bind(ep.getHost(), ep.getPort());
+
+    s.listen(1024);
+    s.setKeepAlive();
+    s.setTcpNoDelay();
+    //不要设置close wait否则http服务回包主动关闭连接会有问题
+    s.setNoCloseWait();
+
+    s.setblock(false);
 }
 
 
@@ -442,6 +488,76 @@ void TC_EpollServer::Handle::setEpollServer(TC_EpollServer *pEpollServer)
 
     _pEpollServer = pEpollServer;
 }
+
+
+TC_EpollServer::BindAdapter::BindAdapter(TC_EpollServer *pEpollServer)
+:_pEpollServer(pEpollServer)
+{
+}
+
+TC_EpollServer::BindAdapter::~BindAdapter()
+{
+//_pEpollServer->terminate();
+
+}
+
+void TC_EpollServer::BindAdapter::insertRecvQueue(const recv_queue::queue_type &vtRecvData, bool bPushBack)
+{
+    {
+        if (bPushBack)
+        {
+            _rbuffer.push_back(vtRecvData);
+        }
+        else
+        {
+            _rbuffer.push_front(vtRecvData);
+        }
+    }
+
+    TC_ThreadLock::Lock lock(monitor);
+
+    monitor.notify();
+}
+
+bool TC_EpollServer::BindAdapter::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
+{
+    bool bRet = false;
+
+    bRet = _rbuffer.pop_front(recv, iWaitTime);
+
+    if(!bRet)
+    {
+        return bRet;
+    }
+
+    return bRet;
+}
+
+TC_EpollServer* TC_EpollServer::BindAdapter::getEpollServer()
+{
+    return _pEpollServer;
+}
+
+void TC_EpollServer::BindAdapter::setEndpoint(const string &str, const int &port)
+{
+    TC_ThreadLock::Lock lock(*this);
+
+    _ep.init(str, port);
+}
+
+TC_Endpoint TC_EpollServer::BindAdapter::getEndpoint() const
+{
+    return _ep;
+}
+
+TC_Socket& TC_EpollServer::BindAdapter::getSocket()
+{
+    return _s;
+}
+
+
+
+
 
 
 bool TC_EpollServer::NetThread::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
