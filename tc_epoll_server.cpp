@@ -42,7 +42,7 @@ void TC_EpollServer::send(unsigned int uid, const string &s, const string &ip, u
 
 }
 
-int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr lsPtr)
+int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
 {
     int iRet = 0;
 
@@ -57,20 +57,6 @@ int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr lsPtr)
     return iRet;
 }
 
-int  TC_EpollServer::bind(TC_EpollServer::BindAdapter* lsPtr)
-{
-    int iRet = 0;
-
-    for(size_t i = 0; i < _netThreads.size(); ++i)
-    {
-        if(i == 0)
-        {
-            iRet = _netThreads[i]->bind(lsPtr);
-        }
-    }
-
-    return iRet;
-}
 
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
 : _epollServer(epollServer)
@@ -126,7 +112,7 @@ int  TC_EpollServer::NetThread::bind(BindAdapterPtr &lsPtr)
     return s.getfd();
 }
 
-
+/*
 int  TC_EpollServer::NetThread::bind(BindAdapter* lsPtr)
 {
     const TC_Endpoint &ep = lsPtr->getEndpoint();
@@ -140,6 +126,7 @@ int  TC_EpollServer::NetThread::bind(BindAdapter* lsPtr)
 
     return s.getfd();
 }
+*/
 
 void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 {

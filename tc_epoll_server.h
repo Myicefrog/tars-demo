@@ -158,8 +158,6 @@ public:
 
 		int bind(string& ip, int& port);
 
-        int bind(BindAdapter* lsPtr);
-
         int bind(BindAdapterPtr &lsPtr);
 
         void bind(const TC_Endpoint &ep, TC_Socket &s);
@@ -220,7 +218,9 @@ public:
 
 	    send_queue                  _sbuffer;
 
-		map<int, BindAdapter*>    _listeners;
+		//map<int, BindAdapter*>    _listeners;
+
+		map<int, BindAdapterPtr>    _listeners;
 
         
     public:
