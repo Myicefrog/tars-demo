@@ -2,6 +2,10 @@
 #define _TC_CLIENTSOCKET_H__
 
 #include <sstream>
+#include <string>
+#include "tc_ex.h"
+
+using namespace std;
 
 namespace tars
 {

@@ -15,7 +15,13 @@ int main()
 
     int port = 9877;
 
-    vNetThread[0]->bind(ip,port);
+    TC_EpollServer::BindAdapter* lsPtr = new TC_EpollServer::BindAdapter(_epollServer);
+
+    lsPtr->setEndpoint(ip,port);
+
+    _epollServer->bind(lsPtr);
+
+     //vNetThread[0]->bind(ip,port);
 
     vNetThread[0]->createEpoll(1);
     

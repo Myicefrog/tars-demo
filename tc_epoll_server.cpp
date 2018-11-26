@@ -42,7 +42,7 @@ void TC_EpollServer::send(unsigned int uid, const string &s, const string &ip, u
 
 }
 
-int  TC_EpollServer::bind(TC_EpollServer::BindAdapter &lsPtr)
+int  TC_EpollServer::bind(TC_EpollServer::BindAdapter* lsPtr)
 {
     int iRet = 0;
 
@@ -98,11 +98,11 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 }
 
 
-int  TC_EpollServer::NetThread::bind(BindAdapter &lsPtr)
+int  TC_EpollServer::NetThread::bind(BindAdapter* lsPtr)
 {
-    const TC_Endpoint &ep = lsPtr.getEndpoint();
+    const TC_Endpoint &ep = lsPtr->getEndpoint();
 
-    TC_Socket& s = lsPtr.getSocket();
+    TC_Socket& s = lsPtr->getSocket();
 
     cout<<"bind"<<endl;
     bind(ep, s);
@@ -132,27 +132,31 @@ void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 
 void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 {
-	int _total = 200000;
+    int _total = 200000;
 	
-	_epoller.create(10240);
+    _epoller.create(10240);
 	
-	cout<<"H64(ET_CLOSE) is "<<H64(ET_CLOSE)<<endl;
-	cout<<"H64(ET_NOTIFY) is "<<H64(ET_NOTIFY)<<endl;
+    cout<<"H64(ET_CLOSE) is "<<H64(ET_CLOSE)<<endl;
+    cout<<"H64(ET_NOTIFY) is "<<H64(ET_NOTIFY)<<endl;
 
-	_epoller.add(_shutdown.getfd(), H64(ET_CLOSE), EPOLLIN);
-        _epoller.add(_notify.getfd(), H64(ET_NOTIFY), EPOLLIN);	
+    _epoller.add(_shutdown.getfd(), H64(ET_CLOSE), EPOLLIN);
+    _epoller.add(_notify.getfd(), H64(ET_NOTIFY), EPOLLIN);	
 
-	cout<<"H64(ET_LISTEN) | _sock is "<< (H64(ET_LISTEN) | _bind_listen.getfd()) <<endl;
+    cout<<"H64(ET_LISTEN) | _sock is "<< (H64(ET_LISTEN) | _bind_listen.getfd()) <<endl;
 
-	_epoller.add(_bind_listen.getfd(), H64(ET_LISTEN) | _bind_listen.getfd(), EPOLLIN);	
 
-	for(uint32_t i = 1; i <= _total; i++)
-	{
+    for (const auto& kv : _listeners)
+    {
+        
+        _epoller.add(kv.first, H64(ET_LISTEN) | kv.first, EPOLLIN);	
+    }
+    for(uint32_t i = 1; i <= _total; i++)
+    {
 
-		_free.push_back(i);
+        _free.push_back(i);
 
-		++_free_size;
-	}
+        ++_free_size;
+    }
 }
 
 void TC_EpollServer::NetThread::run()

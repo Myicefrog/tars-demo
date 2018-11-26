@@ -26,6 +26,15 @@ namespace tars
 
 class TC_EpollServer
 {
+public:
+
+    class NetThread;
+
+    class BindAdapter;    
+
+    class Handle;
+
+    
 
     struct tagRecvData
     {
@@ -54,88 +63,6 @@ class TC_EpollServer
     typedef TC_ThreadQueue<tagSendData*, deque<tagSendData*> > send_queue;
     typedef recv_queue::queue_type recv_queue_type;
 
-
-public:
-	TC_EpollServer(unsigned int iNetThreadNum = 1);
-	~TC_EpollServer();
-
-
-	class NetThread
-	{
-	public:
-		NetThread(TC_EpollServer *epollServer);
-		virtual ~NetThread();	
-
-		int bind(string& ip, int& port);
-
-        int bind(BindAdapter &lsPtr);
-
-        void bind(const TC_Endpoint &ep, TC_Socket &s);
-
-		void run();		
-
-		void createEpoll(uint32_t iIndex = 0);
-
-		bool accept(int fd);
-
-		void processNet(const epoll_event &ev);
-
-		void processPipe();
-
-		enum
-        	{
-            		ET_LISTEN = 1,
-            		ET_CLOSE  = 2,
-            		ET_NOTIFY = 3,
-            		ET_NET    = 0,
-        	};
-
-		struct
-		{
-			string response;
-			uint32_t uid;	
-		}_response;
-
-
-                void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
-
-		void send(unsigned int uid, const string &s, const string &ip, uint16_t port);
-             
-		bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
-
-
-	private:
-		TC_EpollServer            *_epollServer;
-
-		TC_Socket                   _shutdown;
-	 	TC_Socket                   _notify;
-
-		TC_Socket                   _bind_listen;
-
-		TC_Epoller                  _epoller;
-
-		string              _recvbuffer;
-
-		string              response;
-
-		map<int,int>        _listen_connect_id;
-
-		list<uint32_t>                  _free;
-
-		volatile size_t                 _free_size;
-
-        recv_queue      _rbuffer;
-
-	    send_queue                  _sbuffer;
-
-		map<int, BindAdapter>    _listeners;
-
-        
-    public:
-
-                TC_ThreadLock               monitor;
-	};
-
     class Handle : public TC_Thread, public TC_ThreadLock
     {
     public:
@@ -163,6 +90,8 @@ public:
 //        virtual void notifyFilter();
 
         bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+		
+		friend class BindAdapter;
 
     protected:
 
@@ -176,8 +105,8 @@ public:
 
         virtual void handleImp();
     };
-
-    class BindAdapter
+	
+	class BindAdapter : public TC_ThreadLock
 	{
 	public:
 		
@@ -220,16 +149,99 @@ public:
  
 	};
 
+	class NetThread
+	{
+	public:
+		NetThread(TC_EpollServer *epollServer);
+		virtual ~NetThread();	
+
+		int bind(string& ip, int& port);
+
+        int bind(BindAdapter* lsPtr);
+
+        void bind(const TC_Endpoint &ep, TC_Socket &s);
+
+		void run();		
+
+		void createEpoll(uint32_t iIndex = 0);
+
+		bool accept(int fd);
+
+		void processNet(const epoll_event &ev);
+
+		void processPipe();
+
+		enum
+        	{
+            		ET_LISTEN = 1,
+            		ET_CLOSE  = 2,
+            		ET_NOTIFY = 3,
+            		ET_NET    = 0,
+        	};
+
+		struct
+		{
+			string response;
+			uint32_t uid;	
+		}_response;
 
 
+        void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
+
+		void send(unsigned int uid, const string &s, const string &ip, uint16_t port);
+             
+		bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+
+
+	private:
+		TC_EpollServer            *_epollServer;
+
+		TC_Socket                   _shutdown;
+	 	TC_Socket                   _notify;
+
+		TC_Socket                   _bind_listen;
+
+		TC_Epoller                  _epoller;
+
+		string              _recvbuffer;
+
+		string              response;
+
+		map<int,int>        _listen_connect_id;
+
+		list<uint32_t>                  _free;
+
+		volatile size_t                 _free_size;
+
+        recv_queue      _rbuffer;
+
+	    send_queue                  _sbuffer;
+
+		map<int, BindAdapter*>    _listeners;
+
+        
+    public:
+
+                TC_ThreadLock               monitor;
+	};
+
+
+
+public:
+	TC_EpollServer(unsigned int iNetThreadNum = 1);
+	~TC_EpollServer();
 
 public:
     vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
     
     void send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd);
 
-    int  TC_EpollServer::bind(TC_EpollServer::BindAdapter &lsPtr);
+    int  bind(TC_EpollServer::BindAdapter* lsPtr);
 
+protected:
+
+    friend class BindAdapter;
+	
 private:
 	std::vector<NetThread*>        _netThreads;
 };
