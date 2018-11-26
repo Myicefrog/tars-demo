@@ -42,6 +42,21 @@ void TC_EpollServer::send(unsigned int uid, const string &s, const string &ip, u
 
 }
 
+int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr lsPtr)
+{
+    int iRet = 0;
+
+    for(size_t i = 0; i < _netThreads.size(); ++i)
+    {
+        if(i == 0)
+        {
+            iRet = _netThreads[i]->bind(lsPtr);
+        }
+    }
+
+    return iRet;
+}
+
 int  TC_EpollServer::bind(TC_EpollServer::BindAdapter* lsPtr)
 {
     int iRet = 0;
@@ -95,6 +110,20 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 
 	return _bind_listen.getfd();
 
+}
+
+int  TC_EpollServer::NetThread::bind(BindAdapterPtr &lsPtr)
+{
+    const TC_Endpoint &ep = lsPtr->getEndpoint();
+
+    TC_Socket& s = lsPtr->getSocket();
+
+    cout<<"bind"<<endl;
+    bind(ep, s);
+
+    _listeners[s.getfd()] = lsPtr;
+
+    return s.getfd();
 }
 
 
@@ -558,10 +587,6 @@ TC_Socket& TC_EpollServer::BindAdapter::getSocket()
 {
     return _s;
 }
-
-
-
-
 
 
 bool TC_EpollServer::NetThread::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)

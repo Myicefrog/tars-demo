@@ -11,6 +11,7 @@
 #include <map>
 #include <list>
 
+#include <memory>
 
 #include "tc_epoller.h"
 #include "tc_socket.h"
@@ -31,10 +32,10 @@ public:
     class NetThread;
 
     class BindAdapter;    
+	typedef shared_ptr<BindAdapter> BindAdapterPtr;
 
     class Handle;
-
-    
+	typedef shared_ptr<Handle> HandlePtr;
 
     struct tagRecvData
     {
@@ -159,6 +160,8 @@ public:
 
         int bind(BindAdapter* lsPtr);
 
+        int bind(BindAdapterPtr &lsPtr);
+
         void bind(const TC_Endpoint &ep, TC_Socket &s);
 
 		void run();		
@@ -238,6 +241,8 @@ public:
 
     int  bind(TC_EpollServer::BindAdapter* lsPtr);
 
+    int  bind(TC_EpollServer::BindAdapterPtr &lsPtr);
+
 protected:
 
     friend class BindAdapter;
@@ -245,7 +250,7 @@ protected:
 private:
 	std::vector<NetThread*>        _netThreads;
 };
-
+typedef shared_ptr<TC_EpollServer> TC_EpollServerPtr;
 }
 
 #endif
