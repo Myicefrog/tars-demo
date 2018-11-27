@@ -152,6 +152,14 @@ public:
 	class NetThread
 	{
 	public:
+
+		class Connection
+		{
+		public:
+			Connection(BindAdapter *pBindAdapter, int lfd, int timeout, int fd, const string& ip, uint16_t port);
+
+		};
+
 		NetThread(TC_EpollServer *epollServer);
 		virtual ~NetThread();	
 
