@@ -178,6 +178,8 @@ public:
 		protected:
 			
 			void close();
+
+			virtual int recv(recv_queue::queue_type &o);
 			
 			void insertRecvQueue(recv_queue::queue_type &vRecvData);
 
@@ -197,6 +199,10 @@ public:
 			string              _ip;
 
 			uint16_t             _port;
+
+			char                *_pRecvBuffer;
+
+			string              _recvbuffer;
 			
 		};
 
@@ -218,6 +224,8 @@ public:
 		void processNet(const epoll_event &ev);
 
 		void processPipe();
+
+		int recvBuffer(Connection *cPtr, recv_queue::queue_type &v);
 
 		enum
         	{

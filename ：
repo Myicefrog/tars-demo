@@ -301,10 +301,5 @@ int TC_Socket::recvfrom(void *pvBuf, size_t iLen, string &sFromAddr, uint16_t &i
     return iBytes;
 }
 
-int TC_Socket::recvfrom(void *pvBuf, size_t iLen, struct sockaddr *pstFromAddr, socklen_t &iFromLen, int iFlags)
-{
-    return ::recvfrom(_sock, pvBuf, iLen, iFlags, pstFromAddr, &iFromLen);
-}
-
 
 }

@@ -96,6 +96,69 @@ void TC_EpollServer::NetThread::Connection::close()
     }
 }
 
+int TC_EpollServer::NetThread::Connection::recv(recv_queue::queue_type &o)
+{
+    o.clear();
+
+    while(true)
+    {
+        char buffer[32 * 1024];
+        int iBytesReceived = 0;
+
+        iBytesReceived = ::read(_sock.getfd(), (void*)buffer, sizeof(buffer));
+
+        if (iBytesReceived < 0)
+        {
+            if(errno == EAGAIN)
+            {
+                //没有数据了
+                break;
+            }
+            else
+            {
+                //客户端主动关闭
+                return -1;
+            }
+        }
+        else if( iBytesReceived == 0)
+        {
+            //客户端主动关闭
+            return -1;
+        }
+
+        _recvbuffer.append(buffer, iBytesReceived);
+
+        //接收到数据不超过buffer,没有数据了(如果有数据,内核会再通知你)
+        if((size_t)iBytesReceived < sizeof(buffer))
+        {
+        	break;
+        }
+    }
+
+    if(_lfd != -1)
+    {
+        //return parseProtocol(o);
+        if(!_recvbuffer.empty())
+        {
+        	tagRecvData* recv = new tagRecvData();
+            recv->buffer           = std::move(_recvbuffer);
+           	recv->ip               = _ip;
+            recv->port             = _port;
+            recv->recvTimeStamp    = 0;
+            recv->uid              = getId();
+            recv->isOverload       = false;
+            recv->isClosed         = false;
+            recv->fd               = getfd();
+
+            o.push_back(recv);
+        }
+		return o.size();
+    }
+
+    return o.size();
+}
+
+
 void TC_EpollServer::NetThread::Connection::insertRecvQueue(recv_queue::queue_type &vRecvData)
 {
     if(!vRecvData.empty())
@@ -524,6 +587,12 @@ void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Conn
     _epoller.add(cPtr->getfd(), cPtr->getId(), EPOLLIN | EPOLLOUT);
 
 */
+}
+
+
+int  TC_EpollServer::NetThread::recvBuffer(TC_EpollServer::NetThread::Connection *cPtr, recv_queue::queue_type &v)
+{
+    return cPtr->recv(v);
 }
 
 
