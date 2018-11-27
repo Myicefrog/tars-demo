@@ -156,8 +156,48 @@ public:
 		class Connection
 		{
 		public:
+
 			Connection(BindAdapter *pBindAdapter, int lfd, int timeout, int fd, const string& ip, uint16_t port);
 
+			virtual ~Connection();
+
+			BindAdapter* getBindAdapter()       { return _pBindAdapter; }
+
+			void init(unsigned int uid)         { _uid = uid; }
+
+			uint32_t getId() const              { return _uid; }
+
+			int getListenfd() const             { return _lfd; }
+
+			virtual int getfd() const                   { return _sock.getfd(); }
+
+			string getIp() const                { return _ip; }
+
+			uint16_t getPort() const            { return _port; }
+
+		protected:
+			
+			void close();
+			
+			void insertRecvQueue(recv_queue::queue_type &vRecvData);
+
+			friend class NetThread;
+
+		
+		protected:
+			
+			BindAdapter         *_pBindAdapter;
+
+			TC_Socket           _sock;
+
+			volatile uint32_t   _uid;
+
+			int                 _lfd;
+
+			string              _ip;
+
+			uint16_t             _port;
+			
 		};
 
 		NetThread(TC_EpollServer *epollServer);
@@ -200,6 +240,12 @@ public:
              
 		bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
 
+		void addTcpConnection(Connection *cPtr);
+
+		friend class BindAdapter;
+        friend class ConnectionList;
+        friend class TC_EpollServer;
+
 
 	private:
 		TC_EpollServer            *_epollServer;
@@ -216,6 +262,8 @@ public:
 		string              response;
 
 		map<int,int>        _listen_connect_id;
+
+		map<int,Connection*> _uid_connection;
 
 		list<uint32_t>                  _free;
 
@@ -249,6 +297,8 @@ public:
     int  bind(TC_EpollServer::BindAdapter* lsPtr);
 
     int  bind(TC_EpollServer::BindAdapterPtr &lsPtr);
+
+	void addConnection(NetThread::Connection * cPtr, int fd, int iType);
 
 protected:
 

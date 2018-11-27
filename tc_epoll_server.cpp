@@ -57,6 +57,54 @@ int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
     return iRet;
 }
 
+void TC_EpollServer::addConnection(TC_EpollServer::NetThread::Connection * cPtr, int fd, int iType)
+{
+    TC_EpollServer::NetThread* netThread = _netThreads[0];
+
+	netThread->addTcpConnection(cPtr);
+}
+
+TC_EpollServer::NetThread::Connection::Connection(TC_EpollServer::BindAdapter *pBindAdapter, int lfd, int timeout, int fd, const string& ip, uint16_t port)
+: _pBindAdapter(pBindAdapter)
+, _uid(0)
+, _lfd(lfd)
+, _ip(ip)
+, _port(port)
+{
+    assert(fd != -1);
+
+    _sock.init(fd, true, AF_INET);
+}
+
+TC_EpollServer::NetThread::Connection::~Connection()
+{
+	if(_lfd != -1)
+    {
+        assert(!_sock.isValid());
+    }
+
+}
+
+void TC_EpollServer::NetThread::Connection::close()
+{
+    if(_lfd != -1)
+    {
+        if(_sock.isValid())
+        {
+            _sock.close();
+        }
+    }
+}
+
+void TC_EpollServer::NetThread::Connection::insertRecvQueue(recv_queue::queue_type &vRecvData)
+{
+    if(!vRecvData.empty())
+    {
+            _pBindAdapter->insertRecvQueue(vRecvData);
+    }
+}
+
+
 
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
 : _epollServer(epollServer)
@@ -273,16 +321,13 @@ bool TC_EpollServer::NetThread::accept(int fd)
         cs.setTcpNoDelay();
         cs.setCloseWaitDefault();
 
+		cout<<"accept fd is "<<cs.getfd()<<endl;
 
-		uint32_t uid = _free.front();
+		Connection *cPtr = new Connection(_listeners[fd].get(), fd, 2, cs.getfd(), ip, port);
 
-		_free.pop_front();
-
-		--_free_size;
-
-		_listen_connect_id[uid] = cs.getfd();	
-
-		_epoller.add(cs.getfd(), uid, EPOLLIN | EPOLLOUT);
+		_epollServer->addConnection(cPtr, cs.getfd(), 0);
+	
+		return true;
 
 	}
 	else
@@ -301,7 +346,11 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 	uint32_t uid = ev.data.u32;	
 
-	int fd = _listen_connect_id[uid];
+	Connection *cPtr = _uid_connection[uid];
+
+	int fd = cPtr->getfd();
+
+	//int fd = _listen_connect_id[uid];
 
 	cout<<"processNet uid is "<<uid<<" fd is "<<fd<<endl;
 
@@ -398,7 +447,11 @@ void TC_EpollServer::NetThread::processPipe()
             {
                 uint32_t uid = (*it)->uid;
                
-                int fd = _listen_connect_id[uid];
+                //int fd = _listen_connect_id[uid];
+
+				Connection *cPtr = _uid_connection[uid];
+		
+				int fd = cPtr->getfd();
 
                 cout<<"processPipe uid is "<<uid<<" fd is "<<fd<<endl;
 
@@ -437,6 +490,42 @@ void TC_EpollServer::NetThread::send(uint32_t uid, const string &s, const string
     //通知epoll响应, 有数据要发送
     _epoller.mod(_notify.getfd(), H64(ET_NOTIFY), EPOLLOUT);
 }
+
+
+void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Connection *cPtr)
+{
+
+	uint32_t uid = _free.front();
+
+	cPtr->init(uid);
+
+	_free.pop_front();
+
+	--_free_size;
+
+	//_listen_connect_id[uid] = cs.getfd();	
+
+	_uid_connection[uid] = cPtr;
+
+	//_epoller.add(cs.getfd(), uid, EPOLLIN | EPOLLOUT);
+    _epoller.add(cPtr->getfd(), cPtr->getId(), EPOLLIN | EPOLLOUT);
+    
+	
+/*
+	uint32_t uid = _list.getUniqId();
+
+    cPtr->init(uid);
+
+    _list.add(cPtr, cPtr->getTimeout() + TNOW);
+
+    cPtr->getBindAdapter()->increaseNowConnection();
+
+    //注意epoll add必须放在最后, 否则可能导致执行完, 才调用上面语句
+    _epoller.add(cPtr->getfd(), cPtr->getId(), EPOLLIN | EPOLLOUT);
+
+*/
+}
+
 
 TC_EpollServer::Handle::Handle()
 : _pEpollServer(NULL)
