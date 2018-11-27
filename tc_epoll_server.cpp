@@ -28,7 +28,7 @@ TC_EpollServer::TC_EpollServer(unsigned int iNetThreadNum)
 	{
 		TC_EpollServer::NetThread* netThreads = new TC_EpollServer::NetThread(this);
 		_netThreads.push_back(netThreads);
-       	}
+	}
 }
 
 TC_EpollServer::~TC_EpollServer()
@@ -83,14 +83,14 @@ int  TC_EpollServer::NetThread::bind(string& ip, int& port)
 
 	cout<<"bind fd is "<<_bind_listen.getfd()<<endl;
 
-        _bind_listen.listen(1024);
+	_bind_listen.listen(1024);
 
 	cout<<"listen fd is "<<_bind_listen.getfd()<<endl;
 
-        _bind_listen.setKeepAlive();
-        _bind_listen.setTcpNoDelay();
+    _bind_listen.setKeepAlive();
+    _bind_listen.setTcpNoDelay();
         //不要设置close wait否则http服务回包主动关闭连接会有问题
-        _bind_listen.setNoCloseWait();
+    _bind_listen.setNoCloseWait();
 
 	_bind_listen.setblock(false);
 
@@ -242,36 +242,36 @@ bool TC_EpollServer::NetThread::accept(int fd)
 	socklen_t iSockAddrSize = sizeof(sockaddr_in);	
 
 	TC_Socket cs;
-    	cs.setOwner(false);
+	cs.setOwner(false);
 
-    	//接收连接
-    	TC_Socket s;
-    	s.init(fd, false, AF_INET);
+   //接收连接
+	TC_Socket s;
+	s.init(fd, false, AF_INET);
 
 	int iRetCode = s.accept(cs, (struct sockaddr *) &stSockAddr, iSockAddrSize);
 
 	if (iRetCode > 0)
-    	{
+    {
 		string  ip;
 
-        	uint16_t port;
+        uint16_t port;
 
-        	char sAddr[INET_ADDRSTRLEN] = "\0";
+        char sAddr[INET_ADDRSTRLEN] = "\0";
 
-        	struct sockaddr_in *p = (struct sockaddr_in *)&stSockAddr;
+        struct sockaddr_in *p = (struct sockaddr_in *)&stSockAddr;
 
-        	inet_ntop(AF_INET, &p->sin_addr, sAddr, sizeof(sAddr));
+        inet_ntop(AF_INET, &p->sin_addr, sAddr, sizeof(sAddr));
 
-        	ip      = sAddr;
-        	port    = ntohs(p->sin_port);
+        ip      = sAddr;
+        port    = ntohs(p->sin_port);
 
 		cout<<"accept ip is "<<ip<<" port is "<<port<<endl;
 
 
 		cs.setblock(false);
-        	cs.setKeepAlive();
-        	cs.setTcpNoDelay();
-        	cs.setCloseWaitDefault();
+        cs.setKeepAlive();
+        cs.setTcpNoDelay();
+        cs.setCloseWaitDefault();
 
 
 		uint32_t uid = _free.front();
@@ -313,7 +313,7 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 	if(ev.events & EPOLLIN)
 	{
-            recv_queue::queue_type vRecvData;
+    	recv_queue::queue_type vRecvData;
 
 		while(true)
 		{
@@ -350,26 +350,26 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 		}
 
-                if(!_recvbuffer.empty())
-                {
-                    tagRecvData* recv = new tagRecvData();
-                    recv->buffer           = std::move(_recvbuffer);
-                    recv->ip               = "";
-                    recv->port             = 0;
-                    recv->recvTimeStamp    = 0;
-                    recv->uid              = uid;
-                    recv->isOverload       = false;
-                    recv->isClosed         = false;
-                    recv->fd               = fd;
+        if(!_recvbuffer.empty())
+        {
+        	tagRecvData* recv = new tagRecvData();
+            recv->buffer           = std::move(_recvbuffer);
+           	recv->ip               = "";
+            recv->port             = 0;
+            recv->recvTimeStamp    = 0;
+            recv->uid              = uid;
+            recv->isOverload       = false;
+            recv->isClosed         = false;
+            recv->fd               = fd;
 
-                    vRecvData.push_back(recv);
-               }
+            vRecvData.push_back(recv);
+       }
 
-              if(!vRecvData.empty())
-              {
-                  cout<<"insertRecvQueue"<<endl;
-                  insertRecvQueue(vRecvData);
-              }
+       if(!vRecvData.empty())
+       {
+			cout<<"insertRecvQueue"<<endl;
+            insertRecvQueue(vRecvData);
+       }
 
 	}
 
