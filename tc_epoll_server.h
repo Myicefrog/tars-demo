@@ -100,7 +100,6 @@ public:
 
         uint32_t  _iWaitTime;
 
-        vector<Handle>           handles;
 
    protected:
 
@@ -249,6 +248,8 @@ protected:
 	
 private:
 	std::vector<NetThread*>        _netThreads;
+    
+	vector<HandlePtr>           _handles;
 };
 typedef shared_ptr<TC_EpollServer> TC_EpollServerPtr;
 }
