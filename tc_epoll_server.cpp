@@ -15,6 +15,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/epoll.h>
+#include <limits>  
+
+#include <limits.h>
+
 
 using namespace std;
 
@@ -69,6 +73,7 @@ TC_EpollServer::NetThread::Connection::Connection(TC_EpollServer::BindAdapter *p
 , _uid(0)
 , _lfd(lfd)
 , _ip(ip)
+, _bClose(false)
 , _port(port)
 {
     assert(fd != -1);
@@ -167,7 +172,161 @@ void TC_EpollServer::NetThread::Connection::insertRecvQueue(recv_queue::queue_ty
     }
 }
 
+int TC_EpollServer::NetThread::Connection::send()
+{
+    if(_sendbuffer.empty()) return 0;
 
+    return send("", _ip, _port, true);
+}
+
+
+int TC_EpollServer::NetThread::Connection::send(const string& buffer, const string &ip, uint16_t port, bool byEpollOut)
+{
+
+    if (byEpollOut)
+    {
+        int bytes = this->send(_sendbuffer);
+        if (bytes == -1) 
+        { 
+            return -1; 
+        } 
+
+        this->adjustSlices(_sendbuffer, bytes);
+    }
+    else
+    {
+		cout<<"TO BE DONE"<<endl;
+    }
+
+    size_t toSendBytes = 0;
+    for (const auto& slice : _sendbuffer)
+    {
+        toSendBytes += slice.dataLen;
+    }
+
+    if (toSendBytes >= 8 * 1024)
+    {
+		cout<<" buffer too long close."<<endl;
+        clearSlices(_sendbuffer);
+        return -2;
+    }
+
+
+    //需要关闭链接
+    if(_bClose && _sendbuffer.empty())
+    {
+        cout<<" close connection by user."<<endl;
+        return -2;
+    }
+
+    return 0;
+}
+
+
+int TC_EpollServer::NetThread::Connection::send(const std::vector<TC_Slice>& slices)
+{
+    const int kIOVecCount = std::max<int>(sysconf(_SC_IOV_MAX), 16); // be care of IOV_MAX
+
+    size_t alreadySentVecs = 0;
+    size_t alreadySentBytes = 0;
+    while (alreadySentVecs < slices.size())
+    {
+        const size_t vc = std::min<int>(slices.size() - alreadySentVecs, kIOVecCount);
+
+        // convert to iovec array
+        std::vector<iovec> vecs;
+        size_t expectSent = 0;
+        for (size_t i = alreadySentVecs; i < alreadySentVecs + vc; ++ i)
+        {
+            assert (slices[i].dataLen > 0);
+
+            iovec ivc;
+            ivc.iov_base = slices[i].data;
+            ivc.iov_len = slices[i].dataLen;
+            expectSent += slices[i].dataLen;
+
+            vecs.push_back(ivc);
+        }
+
+        int bytes = tcpWriteV(vecs);
+        if (bytes == -1)
+            return -1; // should close
+        else if (bytes == 0)
+            return alreadySentBytes; // EAGAIN
+        else if (bytes == static_cast<int>(expectSent))
+        {
+            alreadySentBytes += bytes;
+            alreadySentVecs += vc; // continue sent
+        }
+        else
+        {
+            assert (bytes > 0); // partial send
+            alreadySentBytes += bytes;
+            return alreadySentBytes;
+        }
+    }
+                
+    return alreadySentBytes;
+}
+
+int TC_EpollServer::NetThread::Connection::tcpWriteV(const std::vector<iovec>& buffers)
+{
+    const int kIOVecCount = std::max<int>(sysconf(_SC_IOV_MAX), 16); // be care of IOV_MAX
+    const int cnt = static_cast<int>(buffers.size());
+
+    assert (cnt <= kIOVecCount);
+        
+    const int sock = _sock.getfd();
+        
+    int bytes = static_cast<int>(::writev(sock, &buffers[0], cnt));
+    if (bytes == -1)
+    {
+        assert (errno != EINVAL);
+        if (errno == EAGAIN)
+            return 0;
+
+        return -1;  // can not send any more
+    }
+    else
+    {
+        return bytes;
+    }
+}
+
+void TC_EpollServer::NetThread::Connection::clearSlices(std::vector<TC_Slice>& slices)
+{
+    adjustSlices(slices, std::numeric_limits<std::size_t>::max());
+}
+
+void TC_EpollServer::NetThread::Connection::adjustSlices(std::vector<TC_Slice>& slices, size_t toSkippedBytes)
+{
+    size_t skippedVecs = 0;
+    for (size_t i = 0; i < slices.size(); ++ i)
+    {
+        assert (slices[i].dataLen > 0);
+        if (toSkippedBytes >= slices[i].dataLen)
+        {
+            toSkippedBytes -= slices[i].dataLen;
+            ++ skippedVecs;
+        }
+        else
+        {
+            if (toSkippedBytes != 0)
+            {
+                const char* src = (const char*)slices[i].data + toSkippedBytes;
+                memmove(slices[i].data, src, slices[i].dataLen - toSkippedBytes);
+                slices[i].dataLen -= toSkippedBytes;
+            }
+
+            break;
+        }
+    }
+
+	//TO BE DNOE
+    // free to pool
+
+    slices.erase(slices.begin(), slices.begin() + skippedVecs);
+}
 
 TC_EpollServer::NetThread::NetThread(TC_EpollServer *epollServer)
 : _epollServer(epollServer)
@@ -427,6 +586,8 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 	{
     	recv_queue::queue_type vRecvData;
 
+		int ret = recvBuffer(cPtr, vRecvData);
+/*
 		while(true)
 		{
 			char buffer[32*1024];
@@ -476,11 +637,13 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
             vRecvData.push_back(recv);
        }
+*/
 
        if(!vRecvData.empty())
        {
 			cout<<"insertRecvQueue"<<endl;
-            insertRecvQueue(vRecvData);
+            //insertRecvQueue(vRecvData);
+            cPtr->insertRecvQueue(vRecvData);
        }
 
 	}
@@ -488,6 +651,11 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 	if (ev.events & EPOLLOUT)
 	{
 		cout<<"need to send data"<<endl;
+		int ret = sendBuffer(cPtr);
+		if (ret < 0)
+		{
+			cout<<"need delConnection"<<endl;
+		}
 	}	
 }
 
@@ -595,6 +763,10 @@ int  TC_EpollServer::NetThread::recvBuffer(TC_EpollServer::NetThread::Connection
     return cPtr->recv(v);
 }
 
+int  TC_EpollServer::NetThread::sendBuffer(TC_EpollServer::NetThread::Connection *cPtr)
+{
+    return cPtr->send();
+}
 
 TC_EpollServer::Handle::Handle()
 : _pEpollServer(NULL)
@@ -649,7 +821,9 @@ void TC_EpollServer::Handle::handleImp()
 
         }
 
-        while(waitForRecvQueue(recv, 0))
+		BindAdapterPtr& adapters = _lsPtr;
+		//while(waitForRecvQueue(recv, 0))
+        while(adapters->waitForRecvQueue(recv, 0))
         {
 	        cout<<"thread id is "<<id()<<endl;
 
@@ -667,6 +841,13 @@ void TC_EpollServer::Handle::setEpollServer(TC_EpollServer *pEpollServer)
     TC_ThreadLock::Lock lock(*this);
 
     _pEpollServer = pEpollServer;
+}
+
+void TC_EpollServer::Handle::setHandleGroup(TC_EpollServer::BindAdapterPtr& lsPtr)
+{
+    TC_ThreadLock::Lock lock(*this);
+
+    _lsPtr = lsPtr;
 }
 
 

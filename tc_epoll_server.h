@@ -18,6 +18,7 @@
 #include "tc_thread.h"
 #include "tc_thread_queue.h"
 #include "tc_clientsocket.h"
+#include "tc_buffer_pool.h"
 
 
 using namespace std;
@@ -91,12 +92,16 @@ public:
 //        virtual void notifyFilter();
 
         bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+
+		void setHandleGroup(TC_EpollServer::BindAdapterPtr& lsPtr);
 		
 		friend class BindAdapter;
 
     protected:
 
         TC_EpollServer  *_pEpollServer;
+
+        BindAdapterPtr  _lsPtr;
 
         uint32_t  _iWaitTime;
 
@@ -183,8 +188,21 @@ public:
 			
 			void insertRecvQueue(recv_queue::queue_type &vRecvData);
 
+			virtual int send();
+
+			virtual int send(const string& buffer, const string &ip, uint16_t port, bool byEpollout = false);
+	
+			int send(const std::vector<TC_Slice>& slices);
+
 			friend class NetThread;
 
+		private:
+
+			int tcpWriteV(const std::vector<iovec>& buffers);
+
+			void clearSlices(std::vector<TC_Slice>& slices);
+
+			void adjustSlices(std::vector<TC_Slice>& slices, size_t toSkippedBytes);
 		
 		protected:
 			
@@ -203,6 +221,10 @@ public:
 			char                *_pRecvBuffer;
 
 			string              _recvbuffer;
+			
+			std::vector<TC_Slice>  _sendbuffer;
+
+			bool                _bClose;
 			
 		};
 
@@ -226,6 +248,8 @@ public:
 		void processPipe();
 
 		int recvBuffer(Connection *cPtr, recv_queue::queue_type &v);
+		
+		int sendBuffer(Connection *cPtr);
 
 		enum
         	{
