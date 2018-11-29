@@ -154,7 +154,7 @@ public:
  
 	};
 
-	class NetThread
+	class NetThread: public TC_Thread, public TC_ThreadLock
 	{
 	public:
 
@@ -318,13 +318,22 @@ public:
 
 
 public:
+
 	TC_EpollServer(unsigned int iNetThreadNum = 1);
 	~TC_EpollServer();
 
 public:
+
+	unsigned int getNetThreadNum() { return _netThreadNum; }
+	
     vector<TC_EpollServer::NetThread*> getNetThread() { return _netThreads; }
     
     void send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd);
+
+	NetThread* getNetThreadOfFd(int fd)
+    {
+    	return _netThreads[fd % _netThreads.size()];
+    }
 
     int  bind(TC_EpollServer::BindAdapter* lsPtr);
 
@@ -332,14 +341,25 @@ public:
 
 	void addConnection(NetThread::Connection * cPtr, int fd, int iType);
 
+    //void startHandle();
+
+    void createEpoll();
+
+	bool isTerminate() const    { return _bTerminate; }
+
 protected:
 
     friend class BindAdapter;
 	
 private:
+
+	bool                        _bTerminate;	
+
 	std::vector<NetThread*>        _netThreads;
     
 	vector<HandlePtr>           _handles;
+
+	unsigned int                _netThreadNum;
 };
 typedef shared_ptr<TC_EpollServer> TC_EpollServerPtr;
 }

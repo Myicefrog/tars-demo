@@ -27,6 +27,8 @@ namespace tars
 #define H64(x) (((uint64_t)x) << 32)
 
 TC_EpollServer::TC_EpollServer(unsigned int iNetThreadNum)
+: _netThreadNum(iNetThreadNum)
+, _bTerminate(false)
 {
 	for (size_t i = 0; i < iNetThreadNum; ++i)
 	{
@@ -41,8 +43,9 @@ TC_EpollServer::~TC_EpollServer()
 
 void TC_EpollServer::send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd)
 {
+	TC_EpollServer::NetThread* netThread = getNetThreadOfFd(fd);
 
-    _netThreads[0]->send(uid, s, ip, port);
+    netThread->send(uid, s, ip, port);
 
 }
 
@@ -63,10 +66,20 @@ int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
 
 void TC_EpollServer::addConnection(TC_EpollServer::NetThread::Connection * cPtr, int fd, int iType)
 {
-    TC_EpollServer::NetThread* netThread = _netThreads[0];
+    //TC_EpollServer::NetThread* netThread = _netThreads[0];
+    TC_EpollServer::NetThread* netThread = getNetThreadOfFd(fd);
 
 	netThread->addTcpConnection(cPtr);
 }
+
+void TC_EpollServer::createEpoll()
+{
+    for(size_t i = 0; i < _netThreads.size(); ++i)
+    {
+        _netThreads[i]->createEpoll(i+1);
+    }
+}
+
 
 TC_EpollServer::NetThread::Connection::Connection(TC_EpollServer::BindAdapter *pBindAdapter, int lfd, int timeout, int fd, const string& ip, uint16_t port)
 : _pBindAdapter(pBindAdapter)
@@ -418,6 +431,8 @@ void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 
 void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
 {
+	//记得之后加上线程的内存池_bufferPool
+
     int _total = 200000;
 	
     _epoller.create(10240);
@@ -436,6 +451,7 @@ void TC_EpollServer::NetThread::createEpoll(uint32_t iIndex)
         
         _epoller.add(kv.first, H64(ET_LISTEN) | kv.first, EPOLLIN);	
     }
+
     for(uint32_t i = 1; i <= _total; i++)
     {
 
@@ -739,6 +755,7 @@ void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Conn
 	_uid_connection[uid] = cPtr;
 
 	//_epoller.add(cs.getfd(), uid, EPOLLIN | EPOLLOUT);
+	//注意这里是EPOLLIN 和EPOLLOUT同时有，目的是EPOLLOUT保证在processNet时候发送上次未发送完的结果
     _epoller.add(cPtr->getfd(), cPtr->getId(), EPOLLIN | EPOLLOUT);
     
 	

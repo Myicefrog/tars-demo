@@ -6,13 +6,10 @@ using namespace tars;
 
 int main()
 {
-	//TC_EpollServerPtr _epollServer = new TC_EpollServer(1);
 
-	TC_EpollServerPtr _epollServer = make_shared<TC_EpollServer>(1);
+	TC_EpollServerPtr _epollServer = make_shared<TC_EpollServer>(3);
 
-    //TC_EpollServer*  _epollServer = new TC_EpollServer(1);
-
-    vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
+    //vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
 
     string ip = "127.0.0.1";
 
@@ -23,10 +20,6 @@ int main()
     lsPtr->setEndpoint(ip,port);
 
     _epollServer->bind(lsPtr);
-
-     //vNetThread[0]->bind(ip,port);
-
-    vNetThread[0]->createEpoll(1);
     
     vector<TC_EpollServer::HandlePtr>          handles;
 
@@ -44,12 +37,41 @@ int main()
 	{
 		handle->start();
 	}
-	//TC_EpollServer::Handle handle;
 
+	_epollServer->createEpoll();
+
+    //vNetThread[0]->createEpoll(1);
+
+    unsigned int iNetThreadNum = _epollServer->getNetThreadNum();
+    vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
+
+	for (size_t i = 0; i < iNetThreadNum; ++i)
+    {
+        vNetThread[i]->start();
+    }
+
+    while(!_epollServer->isTerminate())
+    {
+
+	}	
+
+//记得补充这里关闭机制
+/*
+    if(_epollServer->isTerminate())
+    {
+        for(size_t i = 0; i < iNetThreadNum; ++i)
+        {
+            vNetThread[i]->terminate();
+            vNetThread[i]->getThreadControl().join();
+        }
+
+        _epollServer->stopThread();
+    }
+*/
     //handle.setEpollServer(_epollServer.get());   
 
     //handle.start();
 
-    vNetThread[0]->run();
+    //vNetThread[0]->run();
     return 0;
 }
