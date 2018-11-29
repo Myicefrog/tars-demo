@@ -101,6 +101,8 @@ public:
 
         TC_EpollServer  *_pEpollServer;
 
+		TC_ThreadLock               monitor;
+
         BindAdapterPtr  _lsPtr;
 
         uint32_t  _iWaitTime;

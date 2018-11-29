@@ -15,7 +15,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/epoll.h>
+#include <netinet/in.h>
+#include <sys/uio.h>
+#include <sys/types.h>
 #include <limits>  
+#include <sys/un.h>
 
 #include <limits.h>
 
@@ -830,11 +834,17 @@ void TC_EpollServer::Handle::handleImp()
     while(true)
     {
         {
+			/*
             vector<TC_EpollServer::NetThread*> netThread = _pEpollServer->getNetThread();
 
             TC_ThreadLock::Lock lock(netThread[0]->monitor);
 
             netThread[0]->monitor.timedWait(100);
+			*/
+			
+			TC_ThreadLock::Lock lock(_lsPtr->monitor);
+			_lsPtr->monitor.timedWait(10000);
+			cout<<"handleImp request enter"<<endl;
 
         }
 
@@ -842,11 +852,11 @@ void TC_EpollServer::Handle::handleImp()
 		//while(waitForRecvQueue(recv, 0))
         while(adapters->waitForRecvQueue(recv, 0))
         {
-	        cout<<"thread id is "<<id()<<endl;
+	        cout<<"get this request thread id is "<<id()<<endl;
 
             cout<<"handleImp recv uid  is "<<recv->uid<<endl;
 
-            _pEpollServer->send(recv->uid,recv->buffer, "0", 0, 0);
+            _pEpollServer->send(recv->uid,recv->buffer, recv->ip, recv->port, recv->fd);
 
         }
     }
