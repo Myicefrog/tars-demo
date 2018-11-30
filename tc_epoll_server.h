@@ -92,13 +92,9 @@ public:
 
         void close(unsigned int uid, int fd);
 
-//        void setWaitTime(uint32_t iWaitTime);
-
         virtual void initialize() {};
 
-//        virtual void notifyFilter();
-
-        bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
+        //bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
 
 		void setHandleGroup(TC_EpollServer::BindAdapterPtr& lsPtr);
 		
@@ -282,14 +278,9 @@ public:
 			uint32_t uid;	
 		}_response;
 
-
-        void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
-
 		void send(unsigned int uid, const string &s, const string &ip, uint16_t port);
 
 		void close(unsigned int uid);
-             
-		bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
 
 		void addTcpConnection(Connection *cPtr);
 
@@ -320,11 +311,7 @@ public:
 
 		volatile size_t                 _free_size;
 
-        recv_queue      _rbuffer;
-
 	    send_queue                  _sbuffer;
-
-		//map<int, BindAdapter*>    _listeners;
 
 		map<int, BindAdapterPtr>    _listeners;
 

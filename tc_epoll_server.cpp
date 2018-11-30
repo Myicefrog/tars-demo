@@ -70,7 +70,6 @@ int  TC_EpollServer::bind(TC_EpollServer::BindAdapterPtr &lsPtr)
 
 void TC_EpollServer::addConnection(TC_EpollServer::NetThread::Connection * cPtr, int fd, int iType)
 {
-    //TC_EpollServer::NetThread* netThread = _netThreads[0];
     TC_EpollServer::NetThread* netThread = getNetThreadOfFd(fd);
 
 	netThread->addTcpConnection(cPtr);
@@ -422,22 +421,6 @@ int  TC_EpollServer::NetThread::bind(BindAdapterPtr &lsPtr)
     return s.getfd();
 }
 
-/*
-int  TC_EpollServer::NetThread::bind(BindAdapter* lsPtr)
-{
-    const TC_Endpoint &ep = lsPtr->getEndpoint();
-
-    TC_Socket& s = lsPtr->getSocket();
-
-    cout<<"bind"<<endl;
-    bind(ep, s);
-
-    _listeners[s.getfd()] = lsPtr;
-
-    return s.getfd();
-}
-*/
-
 void TC_EpollServer::NetThread::bind(const TC_Endpoint &ep, TC_Socket &s)
 {
     int type = AF_INET;
@@ -615,8 +598,6 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 
 	int fd = cPtr->getfd();
 
-	//int fd = _listen_connect_id[uid];
-
 	cout<<"processNet uid is "<<uid<<" fd is "<<fd<<endl;
 
 	if (ev.events & EPOLLERR || ev.events & EPOLLHUP)
@@ -636,62 +617,10 @@ void TC_EpollServer::NetThread::processNet(const epoll_event &ev)
 			delConnection(cPtr,true,EM_CLIENT_CLOSE);
 			return;
 		}
-/*
-		while(true)
-		{
-			char buffer[32*1024];
-			int iBytesReceived = 0;
-			
-			iBytesReceived = ::read(fd, (void*)buffer, sizeof(buffer));
-
-			cout<<"iBytesReceived is "<<iBytesReceived<<endl;
-
-			cout<<"::read fd is "<<fd<<endl;
-
-			cout<<"receive buffer is "<<buffer<<endl;
-			
-			if(iBytesReceived < 0)
-			{
-				if(errno == EAGAIN)
-				{
-					break;
-				}
-				else
-				{
-					cout<<"client close"<<endl;
-					return ;
-				}
-			}
-			else if( iBytesReceived == 0 )
-			{
-				cout<<"1 client close"<<endl;
-				return ;
-			}
-
-			_recvbuffer.append(buffer, iBytesReceived);
-
-		}
-
-        if(!_recvbuffer.empty())
-        {
-        	tagRecvData* recv = new tagRecvData();
-            recv->buffer           = std::move(_recvbuffer);
-           	recv->ip               = "";
-            recv->port             = 0;
-            recv->recvTimeStamp    = 0;
-            recv->uid              = uid;
-            recv->isOverload       = false;
-            recv->isClosed         = false;
-            recv->fd               = fd;
-
-            vRecvData.push_back(recv);
-       }
-*/
 
        if(!vRecvData.empty())
        {
 			cout<<"insertRecvQueue"<<endl;
-            //insertRecvQueue(vRecvData);
             cPtr->insertRecvQueue(vRecvData);
        }
 
@@ -739,8 +668,6 @@ void TC_EpollServer::NetThread::processPipe()
         case 's':
             {
                 uint32_t uid = (*it)->uid;
-               
-                //int fd = _listen_connect_id[uid];
 
 				Connection *cPtr = _uid_connection[uid];
 		
@@ -821,21 +748,6 @@ void TC_EpollServer::NetThread::addTcpConnection(TC_EpollServer::NetThread::Conn
 	//_epoller.add(cs.getfd(), uid, EPOLLIN | EPOLLOUT);
 	//注意这里是EPOLLIN 和EPOLLOUT同时有，目的是EPOLLOUT保证在processNet时候发送上次未发送完的结果
     _epoller.add(cPtr->getfd(), cPtr->getId(), EPOLLIN | EPOLLOUT);
-    
-	
-/*
-	uint32_t uid = _list.getUniqId();
-
-    cPtr->init(uid);
-
-    _list.add(cPtr, cPtr->getTimeout() + TNOW);
-
-    cPtr->getBindAdapter()->increaseNowConnection();
-
-    //注意epoll add必须放在最后, 否则可能导致执行完, 才调用上面语句
-    _epoller.add(cPtr->getfd(), cPtr->getId(), EPOLLIN | EPOLLOUT);
-
-*/
 }
 
 
@@ -871,8 +783,8 @@ void TC_EpollServer::NetThread::delConnection(TC_EpollServer::NetThread::Connect
         //构造一个tagRecvData，通知业务该连接的关闭事件
 
         tagRecvData* recv = new tagRecvData();
-        shared_ptr<TC_EpollServer::BindAdapter> p(cPtr->getBindAdapter());
-        recv->adapter    = p;
+        //shared_ptr<TC_EpollServer::BindAdapter> p(cPtr->getBindAdapter());
+        //recv->adapter    = p;
         recv->uid        =  uid;
         recv->ip         = cPtr->getIp();
         recv->port       = cPtr->getPort();
@@ -910,7 +822,7 @@ void TC_EpollServer::Handle::sendResponse(uint32_t uid, const string &sSendBuffe
     _pEpollServer->send(uid, sSendBuffer, ip, port, fd);
 }
 
-
+/*
 bool TC_EpollServer::Handle::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
 {
 
@@ -918,7 +830,7 @@ bool TC_EpollServer::Handle::waitForRecvQueue(tagRecvData* &recv, uint32_t iWait
 
     return netThread[0]->waitForRecvQueue(recv,iWaitTime);
 }
-
+*/
 
 void TC_EpollServer::Handle::close(uint32_t uid, int fd)
 {
@@ -939,14 +851,6 @@ void TC_EpollServer::Handle::handleImp()
     while(!getEpollServer()->isTerminate())
     {
         {
-			/*
-            vector<TC_EpollServer::NetThread*> netThread = _pEpollServer->getNetThread();
-
-            TC_ThreadLock::Lock lock(netThread[0]->monitor);
-
-            netThread[0]->monitor.timedWait(100);
-			*/
-			
 			TC_ThreadLock::Lock lock(_lsPtr->monitor);
 			_lsPtr->monitor.timedWait(10000);
 			cout<<"handleImp request enter"<<endl;
@@ -956,8 +860,6 @@ void TC_EpollServer::Handle::handleImp()
     	tagRecvData* recv = NULL;
 
 		BindAdapterPtr& adapter = _lsPtr;
-		//while(waitForRecvQueue(recv, 0))
-
 		try
 		{
         	while(adapter->waitForRecvQueue(recv, 0))
@@ -1022,7 +924,7 @@ TC_EpollServer::BindAdapter::BindAdapter(TC_EpollServer *pEpollServer)
 
 TC_EpollServer::BindAdapter::~BindAdapter()
 {
-//_pEpollServer->terminate();
+	//_pEpollServer->terminate();
 
 }
 
@@ -1079,41 +981,5 @@ TC_Socket& TC_EpollServer::BindAdapter::getSocket()
 {
     return _s;
 }
-
-
-bool TC_EpollServer::NetThread::waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime)
-{
-    //cout<<"NetThread::waitForRecvQueue"<<endl;
-
-    bool bRet = false;
-
-    bRet = _rbuffer.pop_front(recv, iWaitTime);
-
-    if(!bRet)
-    {
-        return bRet;
-    }
-
-    return bRet;
-}
-
-void TC_EpollServer::NetThread::insertRecvQueue(const recv_queue::queue_type &vtRecvData, bool bPushBack)
-{
-    {
-        if (bPushBack)
-        {
-            _rbuffer.push_back(vtRecvData);
-        }
-        else
-        {
-            _rbuffer.push_front(vtRecvData);
-        }
-    }
-
-    TC_ThreadLock::Lock lock(monitor);
-    cout<<"monitor.notify()"<<endl;
-    monitor.notify();
-}
-
 }
 

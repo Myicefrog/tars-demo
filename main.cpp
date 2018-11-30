@@ -9,8 +9,6 @@ int main()
 
 	TC_EpollServerPtr _epollServer = make_shared<TC_EpollServer>(3);
 
-    //vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
-
     string ip = "127.0.0.1";
 
     int port = 9877;
@@ -39,8 +37,6 @@ int main()
 	}
 
 	_epollServer->createEpoll();
-
-    //vNetThread[0]->createEpoll(1);
 
     unsigned int iNetThreadNum = _epollServer->getNetThreadNum();
     vector<TC_EpollServer::NetThread*> vNetThread = _epollServer->getNetThread();
