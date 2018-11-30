@@ -19,6 +19,7 @@
 #include "tc_thread_queue.h"
 #include "tc_clientsocket.h"
 #include "tc_buffer_pool.h"
+#include "Servant.h"
 
 
 using namespace std;
@@ -92,7 +93,7 @@ public:
 
         void close(unsigned int uid, int fd);
 
-        virtual void initialize() {};
+        virtual void initialize();
 
         //bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
 
@@ -110,6 +111,8 @@ public:
 
         uint32_t  _iWaitTime;
 
+		map<string, ServantPtr> _servants;
+
 
    protected:
 
@@ -125,6 +128,10 @@ public:
 		BindAdapter(TC_EpollServer *pEpollServer);
 
 		~BindAdapter();
+
+		void setName(const string &name);
+
+		string getName() const;
 
         void setEndpoint(const string &str,const int &port);
 
@@ -156,7 +163,8 @@ public:
         recv_queue      _rbuffer;		
         
         TC_ThreadLock               monitor;
- 
+
+		string          _name;
 	};
 
 	class NetThread: public TC_Thread, public TC_ThreadLock

@@ -1,4 +1,6 @@
 #include "tc_epoll_server.h"
+#include "HelloImp.h"
+#include "ServantHelper.h"
 
 using namespace std;
 using namespace tars;
@@ -9,16 +11,34 @@ int main()
 
 	TC_EpollServerPtr _epollServer = make_shared<TC_EpollServer>(3);
 
+/////////////////////////////////////////////////
+
     string ip = "127.0.0.1";
 
     int port = 9877;
 
-    TC_EpollServer::BindAdapterPtr lsPtr = make_shared<TC_EpollServer::BindAdapter>(_epollServer.get());
 
-    lsPtr->setEndpoint(ip,port);
+/////////////////////////////////////////////////
+	string adapterName = "TestApp.HelloServer.HelloObjAdapter";
+	string servantName = "TestApp.HelloServer.HelloObj";
 
-    _epollServer->bind(lsPtr);
-    
+	ServantHelperManager::getInstance()->setAdapterServant(adapterName, servantName);
+
+	TC_EpollServer::BindAdapterPtr lsPtr = make_shared<TC_EpollServer::BindAdapter>(_epollServer.get());
+
+	lsPtr->setName(adapterName);
+
+	lsPtr->setEndpoint(ip,port);
+
+	_epollServer->bind(lsPtr);
+
+///////////////////////////////////////////////////
+
+	ServantHelperManager::getInstance()->addServant<HelloImp>(adapterName,true);    
+
+
+////////////////////////////////////////////////
+
     vector<TC_EpollServer::HandlePtr>          handles;
 
 	int handleNum = 4;

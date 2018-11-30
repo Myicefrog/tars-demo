@@ -844,6 +844,18 @@ void TC_EpollServer::Handle::run()
     handleImp();
 }
 
+void TC_EpollServer::Handle::initialize()
+{
+
+	ServantPtr servant = ServantHelperManager::getInstance()->create(_lsPtr->getName());
+	_servants[servant->getName()] = servant;
+
+	servant->setHandle(this);
+	servant->initialize();
+
+}
+
+
 void TC_EpollServer::Handle::handleImp()
 {
     cout<<"Handle::handleImp"<<endl;
@@ -924,8 +936,20 @@ TC_EpollServer::BindAdapter::BindAdapter(TC_EpollServer *pEpollServer)
 
 TC_EpollServer::BindAdapter::~BindAdapter()
 {
-	//_pEpollServer->terminate();
+	_pEpollServer->terminate();
 
+}
+
+void TC_EpollServer::BindAdapter::setName(const string &name)
+{
+    TC_ThreadLock::Lock lock(*this);
+
+    _name = name;
+}
+
+string TC_EpollServer::BindAdapter::getName() const
+{
+    return _name;
 }
 
 void TC_EpollServer::BindAdapter::insertRecvQueue(const recv_queue::queue_type &vtRecvData, bool bPushBack)
