@@ -55,8 +55,6 @@ int main()
 
 	}	
 
-//记得补充这里关闭机制
-/*
     if(_epollServer->isTerminate())
     {
         for(size_t i = 0; i < iNetThreadNum; ++i)
@@ -65,13 +63,17 @@ int main()
             vNetThread[i]->getThreadControl().join();
         }
 
-        _epollServer->stopThread();
+        //_epollServer->stopThread();
+    
+		for(auto& handle : handles)
+		{
+			if (handle->isAlive())
+            {
+                handle->getThreadControl().join();
+            }
+		}
+		
     }
-*/
-    //handle.setEpollServer(_epollServer.get());   
 
-    //handle.start();
-
-    //vNetThread[0]->run();
     return 0;
 }

@@ -26,9 +26,16 @@ using namespace std;
 namespace tars
 {
 
-class TC_EpollServer
+class TC_EpollServer : public TC_ThreadLock
 {
 public:
+
+    enum EM_CLOSE_T
+    {
+        EM_CLIENT_CLOSE = 0,         //客户端主动关闭
+        EM_SERVER_CLOSE = 1,        //服务端业务主动调用close关闭连接,或者框架因某种异常主动关闭连接
+        EM_SERVER_TIMEOUT_CLOSE = 2  //连接超时了，服务端主动关闭
+    };
 
     class NetThread;
 
@@ -48,7 +55,7 @@ public:
         bool            isOverload;     /**是否已过载 */
         bool            isClosed;       /**是否已关闭*/
         int                fd;                /*保存产生该消息的fd，用于回包时选择网络线程*/
-       // BindAdapterPtr  adapter;        /**标识哪一个adapter的消息*/
+        BindAdapterPtr  adapter;        /**标识哪一个adapter的消息*/
         int             closeType;     /*如果是关闭消息包，则标识关闭类型,0:表示客户端主动关闭；1:服务端主动关闭;2:连接超时服务端主动关闭*/
     };
 
@@ -182,6 +189,8 @@ public:
 
 			uint16_t getPort() const            { return _port; }
 
+			bool setClose();
+
 		protected:
 			
 			void close();
@@ -218,6 +227,8 @@ public:
 
 			string              _ip;
 
+			bool                _bClose;
+
 			uint16_t             _port;
 
 			char                *_pRecvBuffer;
@@ -226,7 +237,6 @@ public:
 			
 			std::vector<TC_Slice>  _sendbuffer;
 
-			bool                _bClose;
 			
 		};
 
@@ -253,6 +263,11 @@ public:
 		
 		int sendBuffer(Connection *cPtr);
 
+		void terminate();
+
+		void delConnection(Connection *cPtr, bool bEraseList = true,EM_CLOSE_T closeType=EM_CLIENT_CLOSE);
+
+
 		enum
         	{
             		ET_LISTEN = 1,
@@ -271,6 +286,8 @@ public:
         void insertRecvQueue(const recv_queue::queue_type &vtRecvData,bool bPushBack = true);
 
 		void send(unsigned int uid, const string &s, const string &ip, uint16_t port);
+
+		void close(unsigned int uid);
              
 		bool waitForRecvQueue(tagRecvData* &recv, uint32_t iWaitTime);
 
@@ -311,6 +328,8 @@ public:
 
 		map<int, BindAdapterPtr>    _listeners;
 
+		bool                        _bTerminate;
+
         
     public:
 
@@ -332,6 +351,8 @@ public:
     
     void send(unsigned int uid, const string &s, const string &ip, uint16_t port, int fd);
 
+	void close(unsigned int uid, int fd);
+
 	NetThread* getNetThreadOfFd(int fd)
     {
     	return _netThreads[fd % _netThreads.size()];
@@ -349,11 +370,15 @@ public:
 
 	bool isTerminate() const    { return _bTerminate; }
 
+	void terminate();
+
 protected:
 
     friend class BindAdapter;
 	
 private:
+
+	unsigned int                _netThreadNum;
 
 	bool                        _bTerminate;	
 
@@ -361,7 +386,6 @@ private:
     
 	vector<HandlePtr>           _handles;
 
-	unsigned int                _netThreadNum;
 };
 typedef shared_ptr<TC_EpollServer> TC_EpollServerPtr;
 }
