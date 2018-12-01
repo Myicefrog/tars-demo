@@ -3,6 +3,8 @@
 
 #include "tc_epoll_server.h"
 
+using namespace std;
+
 namespace tars
 {
 	
@@ -29,9 +31,11 @@ public:
 protected:
 
 	TC_EpollServer::Handle* _handle;
+
+	string _name;
 };
 	
-typedef shared_prt<Servant> ServantPtr;
+typedef shared_ptr<Servant> ServantPtr;
 
 }
 

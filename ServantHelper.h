@@ -21,9 +21,17 @@ template<class T>
 struct ServantCreation : public ServantHelperCreation
 {
 
-    ServantPtr create(const string &s) {
+    ServantPtr create(const string &s) 
+	{
     	cout<<"ServantPtr create "<<endl;
-    	T *p = new T; p->setName(s); return p; }
+
+    	//T *p = new T; p->setName(s); return p; 
+
+    	shared_ptr<T> p = make_shared<T>();
+
+		p->setName(s); return p; 
+		
+	}
 };
 
 class ServantHelperManager : public TC_Singleton<ServantHelperManager>
@@ -40,7 +48,10 @@ public:
             cerr<<"[TARS]ServantHelperManager::addServant "<< id <<" not find adapter.(maybe not conf in the web)"<<endl;
             throw runtime_error("[TARS]ServantHelperManager::addServant " + id + " not find adapter.(maybe not conf in the web)");
         }
-        _servant_creator[id] = new ServantCreation<T>();
+
+		shared_ptr< ServantCreation<T> > servantCreationPtr = make_shared< ServantCreation<T> >();		
+        _servant_creator[id] = servantCreationPtr;
+
     }	
 
 	ServantPtr create(const string &sAdapter);

@@ -844,16 +844,6 @@ void TC_EpollServer::Handle::run()
     handleImp();
 }
 
-void TC_EpollServer::Handle::initialize()
-{
-
-	ServantPtr servant = ServantHelperManager::getInstance()->create(_lsPtr->getName());
-	_servants[servant->getName()] = servant;
-
-	servant->setHandle(this);
-	servant->initialize();
-
-}
 
 
 void TC_EpollServer::Handle::handleImp()

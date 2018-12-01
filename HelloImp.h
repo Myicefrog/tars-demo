@@ -12,6 +12,6 @@ public:
     virtual void initialize();
 
 	virtual void destroy();
-}
+};
 
 #endif

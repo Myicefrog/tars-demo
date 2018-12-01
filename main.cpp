@@ -1,6 +1,7 @@
 #include "tc_epoll_server.h"
 #include "HelloImp.h"
 #include "ServantHelper.h"
+#include "ServantHandle.h"
 
 using namespace std;
 using namespace tars;
@@ -34,18 +35,18 @@ int main()
 
 ///////////////////////////////////////////////////
 
-	ServantHelperManager::getInstance()->addServant<HelloImp>(adapterName,true);    
+	ServantHelperManager::getInstance()->addServant<HelloImp>(servantName,true);    
 
 
 ////////////////////////////////////////////////
 
-    vector<TC_EpollServer::HandlePtr>          handles;
+    vector<ServantHandlePtr>          handles;
 
 	int handleNum = 4;
 
 	for (int32_t i = 0; i < handleNum; ++i)
 	{
-		TC_EpollServer::HandlePtr handle = make_shared<TC_EpollServer::Handle>();
+		ServantHandlePtr handle = make_shared<ServantHandle>();
 		handle->setEpollServer(_epollServer.get());
 		handle->setHandleGroup(lsPtr);
 		handles.push_back(handle);
