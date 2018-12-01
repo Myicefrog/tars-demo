@@ -165,6 +165,8 @@ int TC_EpollServer::NetThread::Connection::recv(recv_queue::queue_type &o)
 
         _recvbuffer.append(buffer, iBytesReceived);
 
+		cout<<"Connection::recv _recvbuffer is "<<_recvbuffer<<":end"<<endl;
+
         //接收到数据不超过buffer,没有数据了(如果有数据,内核会再通知你)
         if((size_t)iBytesReceived < sizeof(buffer))
         {
@@ -880,7 +882,9 @@ void TC_EpollServer::Handle::handleImp()
 
             		cout<<"handleImp recv uid  is "<<recv->uid<<endl;
 
-            		_pEpollServer->send(recv->uid,recv->buffer, recv->ip, recv->port, recv->fd);
+            		//_pEpollServer->send(recv->uid,recv->buffer, recv->ip, recv->port, recv->fd);
+
+					handle(stRecvData);
 				}
 				delete recv;
             	recv = NULL;

@@ -6,6 +6,12 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+
 int main(int argc, char *argv[])
 {
 	int sockfd = -1;
@@ -35,17 +41,18 @@ int main(int argc, char *argv[])
 	
 	printf("connect successfull\n");
 
-    	char sendBuf[1024] = { 0 };
     	char recvBuf[1024] = { 0 };
-    	while( fgets( sendBuf, sizeof( sendBuf ), stdin ) != NULL ) 
-	{
-        	write( sockfd, sendBuf, sizeof( sendBuf ) );
+
+		string request;
+    	while( getline(cin,request) ) 
+		{
+					
+        	write( sockfd, request.c_str(), request.size() );
         	read( sockfd, recvBuf, sizeof( recvBuf ) );
         	fputs( recvBuf, stdout );
 		printf("\n");
-        	memset( sendBuf, 0, sizeof( sendBuf ) );
         	memset( recvBuf, 0, sizeof( recvBuf ) );
-   	}
+   		}
 
     	close( sockfd );
 

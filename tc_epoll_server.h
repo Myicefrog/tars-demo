@@ -116,6 +116,8 @@ public:
    protected:
 
         virtual void handleImp();
+
+		virtual void handle(const tagRecvData &stRecvData) = 0;
     };
 	
 	class BindAdapter : public TC_ThreadLock

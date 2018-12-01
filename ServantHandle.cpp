@@ -43,4 +43,23 @@ void ServantHandle::initialize()
 
 }
 
+void ServantHandle::handle(const TC_EpollServer::tagRecvData &stRecvData)
+{
+
+	map<string, ServantPtr>::iterator sit = _servants.find(ServantHelperManager::getInstance()->getAdapterServant(stRecvData.adapter->getName()));
+
+	assert(sit != _servants.end());
+
+	vector<char> buffer;
+
+	sit->second->dispatch(stRecvData.buffer, buffer);
+
+	string response;
+	response.resize(buffer.size());
+    response.assign(buffer.begin(),buffer.end());
+
+	_pEpollServer->send(stRecvData.uid, response, stRecvData.ip, stRecvData.port, stRecvData.fd);
+
+}
+
 }

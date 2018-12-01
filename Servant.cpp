@@ -31,4 +31,20 @@ TC_EpollServer::Handle* Servant::getHandle()
     return _handle;
 }
 
+int Servant::dispatch(const string &request, vector<char> &buffer)
+{
+	cout<<"Servant::dispatch"<<endl;
+
+	int ret = 0;
+
+    {
+		//这里为什么要加锁
+        //TC_LockT<TC_ThreadRecMutex> lock(*this);
+
+        ret = doRequest(request, buffer);
+    }
+    return ret;
+}
+
+
 }

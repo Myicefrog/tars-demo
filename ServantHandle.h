@@ -21,6 +21,8 @@ public:
 	
 	~ServantHandle();
 
+	virtual void handle(const TC_EpollServer::tagRecvData &stRecvData);
+
 protected:
 
 	void initialize();

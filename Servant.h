@@ -28,6 +28,12 @@ public:
 
 	virtual void destroy() = 0;
 
+	virtual int dispatch(const string &request, vector<char> &buffer);
+
+	virtual int doRequest(const string &request, vector<char> &buffer) { return -1; }
+
+
+
 protected:
 
 	TC_EpollServer::Handle* _handle;

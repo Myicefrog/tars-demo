@@ -12,6 +12,8 @@ public:
     virtual void initialize();
 
 	virtual void destroy();
+
+	virtual int doRequest(const string& request, vector<char> &buffer);
 };
 
 #endif
