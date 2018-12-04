@@ -24,6 +24,17 @@ using namespace std;
 
 namespace tars
 {
+class Communicator;
+class AdapterProxy;
+class ServantProxy;
+class ServantProxyCallback;
+class ObjectProxy;
+class Transceiver;
+class ServantProxyFactory;
+class ObjectProxyFactory;
+class AsyncProcThread;
+
+
 struct TarsException : public TC_Exception
 {
     TarsException(const string &buffer) : TC_Exception(buffer){};

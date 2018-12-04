@@ -51,6 +51,35 @@ class Communicator;
 
 class CommunicatorEpoll : public TC_Thread
 {
+
+    struct NotifyInfo
+    {
+        /**
+         * 构造函数
+         */
+        NotifyInfo()
+        : eventFd(-1)
+        , bValid(false)
+        {
+        }
+
+        /**
+         * 析构函数
+         */
+        ~NotifyInfo()
+        {
+        }
+
+        
+        FDInfo    stFDInfo;   //通知FD信息
+        
+        TC_Socket notify;     //通知fd
+
+        int       eventFd;    //eventfd,目前未使用
+        
+        bool      bValid;     //是否有效
+    };
+
 public:
 	
 	CommunicatorEpoll(Communicator * pCommunicator, size_t _netThreadSeq);
@@ -81,9 +110,15 @@ protected:
 
 	Communicator *         _communicator;
 
+	NotifyInfo             _notify[2048];
+
 	TC_Socket              _shutdown;
 
 	TC_Epoller             _ep;
+
+	size_t 					_asyncThreadNum;
+
+	AsyncProcThread *      _asyncThread[1024];
 };
 
 
