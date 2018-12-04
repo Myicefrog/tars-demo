@@ -82,14 +82,9 @@ class CommunicatorEpoll : public TC_Thread
 
 public:
 	
-	CommunicatorEpoll(Communicator * pCommunicator, size_t _netThreadSeq);
+	CommunicatorEpoll(size_t _netThreadSeq);
 
 	virtual ~CommunicatorEpoll();
-
-    inline Communicator * getCommunicator()
-    {
-        return _communicator;
-    }
 
 
 	virtual void run();
@@ -102,13 +97,11 @@ protected:
 
 	void handle(FDInfo * pFDInfo, uint32_t events);
 
-	void handleInputImp(Transceiver * pTransceiver);
+	void handleInputImp();
 
-	void handleOutputImp(Transceiver * pTransceiver);
+	void handleOutputImp();
 	
 protected:
-
-	Communicator *         _communicator;
 
 	NotifyInfo             _notify[2048];
 
@@ -123,6 +116,4 @@ protected:
 
 
 }
-
-
 #endif

@@ -1,11 +1,10 @@
 #include "CommunicatorEpoll.h"
-#include "Communicator.h"
 
 using namespace std;
 
 namespace tars
 {
-CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThreadSeq)
+CommunicatorEpoll::CommunicatorEpoll(size_t netThreadSeq)
 : _communicator(pCommunicator)
 {
     _ep.create(1024);
@@ -14,7 +13,7 @@ CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThre
     _ep.add(_shutdown.getfd(), 0, EPOLLIN);
 
     //ObjectProxyFactory 对象
-    _objectProxyFactory = new ObjectProxyFactory(this);
+    //_objectProxyFactory = new ObjectProxyFactory(this);
 
     //异步线程数
     _asyncThreadNum = 3;
@@ -40,11 +39,6 @@ CommunicatorEpoll::CommunicatorEpoll(Communicator * pCommunicator,size_t netThre
 
 CommunicatorEpoll::~CommunicatorEpoll()
 {
-    if(_objectProxyFactory)
-    {
-        delete _objectProxyFactory;
-        _objectProxyFactory = NULL;
-    }
 }
 
 void CommunicatorEpoll::addFd(int fd, FDInfo * info, uint32_t events)
@@ -125,7 +119,7 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
                         return;
                     }
 
-                    msg->pObjectProxy->invoke(msg);
+                    //msg->pObjectProxy->invoke(msg);
                 }
             }
             catch(exception & e)
@@ -137,25 +131,21 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
         }
         else
         {
-
-            Transceiver *pTransceiver = (Transceiver*)pFDInfo->p;
-
             //先收包
             if (events & EPOLLIN)
             {
-            	handleInputImp(pTransceiver);
+            	handleInputImp();
             }
 
             //发包
             if (events & EPOLLOUT)
             {
-                handleOutputImp(pTransceiver);
+                handleOutputImp();
             }
 
             //连接出错 直接关闭连接
             if(events & EPOLLERR)
             {
-                pTransceiver->close();
             }
         }
     }
@@ -165,6 +155,16 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
     catch(...)
     {
     }
+}
+
+
+void CommunicatorEpoll::handleInputImp()
+{
+}
+
+
+void CommunicatorEpoll::handleOutputImp()
+{
 }
 
 

@@ -1,5 +1,4 @@
 #include "AsyncProcThread.h"
-#include "Communicator.h"
 #include <iostream>
 
 using namespace std;
