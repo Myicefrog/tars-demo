@@ -9,13 +9,14 @@ using namespace std;
 
 namespace tars
 {
-class AdapterProxy;
+
+class ObjectProxy;
 
 class Transceiver
 {
 public:
 
-	Transceiver(AdapterProxy * pAdapterProxy, const EndpointInfo &ep);
+	Transceiver(ObjectProxy *objectProxy, const string& ip, const uint16_t& port );
 
 	virtual ~Transceiver();	
 
@@ -26,19 +27,29 @@ public:
 
 	virtual void close();
 
+	void connect();
+
+	ObjectProxy * getObjProxy() { return _objectProxy; }
+
+    virtual int fd() const
+    {
+        return _fd;
+    }
 
 protected:
 
 	int                      _fd;
+	
+	string _ip;
+	uint16_t _port;
 
 	FDInfo                   _fdInfo;	
 	
-	AdapterProxy *           _adapterProxy;
-
 	string 					_sendBuffer;
 	
-	string 					_recvBuffer
+	string 					_recvBuffer;
 
+	ObjectProxy*                           _objectProxy;
 };
 
 }

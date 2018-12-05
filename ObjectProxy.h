@@ -3,6 +3,7 @@
 
 #include "Message.h"
 #include "CommunicatorEpoll.h"
+#include "Transceiver.h"
 
 namespace tars
 {
@@ -16,7 +17,7 @@ public:
 
 	void invoke(ReqMessage* msg);
 
-	inline CommunicatorEpoll * getCommunicatorEpoll()
+	CommunicatorEpoll * getCommunicatorEpoll()
     {
         return _communicatorEpoll;
     }
@@ -27,6 +28,7 @@ protected:
 
 	CommunicatorEpoll *                   _communicatorEpoll;
 
+	std::unique_ptr<Transceiver>           _trans;
 };
 
 }

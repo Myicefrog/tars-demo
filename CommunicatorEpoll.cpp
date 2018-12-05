@@ -45,16 +45,19 @@ CommunicatorEpoll::~CommunicatorEpoll()
 
 void CommunicatorEpoll::addFd(int fd, FDInfo * info, uint32_t events)
 {
+	cout<<"addFd"<<endl;
     _ep.add(fd,(uint64_t)info,events);
 }
 
 void CommunicatorEpoll::delFd(int fd, FDInfo * info, uint32_t events)
 {
+	cout<<"defFd"<<endl;
     _ep.del(fd,(uint64_t)info,events);
 }
 
 void CommunicatorEpoll::notify(size_t iSeq,ReqInfoQueue * msgQueue)
 {
+
     if(_notify[iSeq].bValid)
     {
         _ep.mod(_notify[iSeq].notify.getfd(),(long long)&_notify[iSeq].stFDInfo, EPOLLIN);
@@ -70,6 +73,7 @@ void CommunicatorEpoll::notify(size_t iSeq,ReqInfoQueue * msgQueue)
         _notify[iSeq].bValid           = true;
 
         _ep.add(_notify[iSeq].notify.getfd(),(long long)&_notify[iSeq].stFDInfo, EPOLLIN);
+		cout<<"CommunicatorEpoll::notify _ep.add"<<endl;
     }
 }
 
@@ -154,17 +158,18 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
         }
         else
         {
+			Transceiver *pTransceiver = (Transceiver*)pFDInfo->p;
             //先收包
             if (events & EPOLLIN)
             {
-//AdapterProxy::AdapterProxy-->_trans
-            	handleInputImp();
+				cout<<"handleInputImp"<<endl;
+            	handleInputImp(pTransceiver);
             }
 
             //发包
             if (events & EPOLLOUT)
             {
-                handleOutputImp();
+                handleOutputImp(pTransceiver);
             }
 
             //连接出错 直接关闭连接
@@ -182,12 +187,12 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
 }
 
 
-void CommunicatorEpoll::handleInputImp()
+void CommunicatorEpoll::handleInputImp(Transceiver * pTransceiver)
 {
 }
 
 
-void CommunicatorEpoll::handleOutputImp()
+void CommunicatorEpoll::handleOutputImp(Transceiver * pTransceiver)
 {
 }
 
