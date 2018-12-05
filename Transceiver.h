@@ -16,6 +16,14 @@ class Transceiver
 {
 public:
 
+    enum ReturnStatus
+    {
+        eRetError = -1,
+        eRetOk    = 0,
+        eRetFull  = 1,
+    };
+
+
 	Transceiver(ObjectProxy *objectProxy, const string& ip, const uint16_t& port );
 
 	virtual ~Transceiver();	
@@ -35,6 +43,13 @@ public:
     {
         return _fd;
     }
+
+	virtual int doRequest();
+
+	int sendRequest(const char * pData,size_t iSize, bool forceSend = false);
+	
+	virtual int send(const void* buf, uint32_t len, uint32_t flag);
+
 
 protected:
 

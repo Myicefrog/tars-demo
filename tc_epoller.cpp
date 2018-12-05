@@ -16,6 +16,9 @@
 
 #include "tc_epoller.h"
 #include <unistd.h>
+#include <iostream>
+
+using namespace std;
 
 namespace tars
 {
@@ -48,11 +51,16 @@ void TC_Epoller::ctrl(int fd, long long data, __uint32_t events, int op)
     ev.data.u64 = data;
     if(_et)
     {
+		cout<<"events is "<<events<<endl;
+		cout<<"events | EPOLLET is "<<(events | EPOLLET)<<endl;
+		cout<<"EPOLLET is "<<EPOLLET<<endl;
         ev.events   = events | EPOLLET;
+		cout<<"TC_Epoller ET molde  ev.events is "<<ev.events<<endl;
     }
     else
     {
         ev.events   = events;
+		cout<<"TC_Epoller LT molde  ev.events is "<<ev.events<<endl;
     }
 
     epoll_ctl(_iEpollfd, op, fd, &ev);

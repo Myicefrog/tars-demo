@@ -25,12 +25,11 @@ void ObjectProxy::invoke(ReqMessage * msg)
 //_trans->reconnect();
 
 	_trans->connect();
-	cout<<"_trans->fd() is "<<_trans->fd()<<endl;
-	FDInfo                   _fdInfo;
-	    _fdInfo.iType = FDInfo::ET_C_NET;
-    _fdInfo.p     = NULL;
-    _fdInfo.fd    = -1;
-	getCommunicatorEpoll()->addFd(_trans->fd(), &_fdInfo, EPOLLIN|EPOLLOUT);
+
+	if(_trans->sendRequest(msg->sReqData.c_str(),msg->sReqData.size()) != Transceiver::eRetError)
+	{
+		cout<<"_trans->sendRequest"<<endl;
+	}
 }
 
 }

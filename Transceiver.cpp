@@ -62,7 +62,44 @@ void Transceiver::connect()
     //int iQos;
     //::setsockopt(fd,SOL_IP,IP_TOS,&iQos,sizeof(iQos));
 
-	//getObjProxy()->getCommunicatorEpoll()->addFd(fd, &_fdInfo, EPOLLIN|EPOLLOUT);
+	cout<<"EPOLLIN|EPOLLOUT is "<<(EPOLLIN|EPOLLOUT)<<endl;
+
+	getObjProxy()->getCommunicatorEpoll()->addFd(fd, &_fdInfo, EPOLLIN|EPOLLOUT);
 }
+
+int Transceiver::doRequest()
+{
+	return 0;	
+}
+
+int Transceiver::sendRequest(const char * pData, size_t iSize, bool forceSend)
+{
+	int iRet = this->send(pData,iSize,0);
+
+	if(iRet < 0)
+    {
+        return eRetError;
+    }
+	return iRet;
+}
+
+int Transceiver::send(const void* buf, uint32_t len, uint32_t flag)
+{
+	int iRet = ::send(_fd, buf, len, flag);	
+	if (iRet < 0 && errno != EAGAIN)
+    {
+		cout<<"Transceiver::send fail"<<endl;
+		return iRet;
+
+	}
+
+	if (iRet < 0 && errno == EAGAIN)
+        iRet = 0;
+
+	return iRet;
+
+}
+
+
 
 }

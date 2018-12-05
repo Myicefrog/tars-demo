@@ -45,7 +45,6 @@ CommunicatorEpoll::~CommunicatorEpoll()
 
 void CommunicatorEpoll::addFd(int fd, FDInfo * info, uint32_t events)
 {
-	cout<<"addFd"<<endl;
     _ep.add(fd,(uint64_t)info,events);
 }
 
@@ -97,6 +96,9 @@ void CommunicatorEpoll::run()
                 }
 
 				cout<<"CommunicatorEpoll handle"<<endl;
+				cout<<"ev.events is "<<ev.events<<endl;
+				cout<<"EPOLLIN is "<<EPOLLIN<<endl;
+				cout<<"EPOLLOUT is "<<EPOLLOUT<<endl;
                 handle((FDInfo*)data, ev.events);
             }
         }
@@ -145,7 +147,7 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
 
                         return;
                     }
-					cout<<"msg->request is "<<msg->request<<endl;
+					cout<<"msg->sReqData is "<<msg->sReqData<<endl;
                     msg->pObjectProxy->invoke(msg);
                 }
             }
@@ -158,8 +160,14 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
         }
         else
         {
+			cout<<"FDInfo is "<<pFDInfo->iType<<endl;
 			Transceiver *pTransceiver = (Transceiver*)pFDInfo->p;
+			cout<<"pTransceiver fd is "<<pTransceiver->fd()<<endl;
             //先收包
+			cout<<"events is "<<events<<endl;
+			cout<<"events & EPOLLIN is "<<(events & EPOLLIN)<<endl;
+			cout<<"events & EPOLLOUT is "<<(events & EPOLLOUT)<<endl;
+
             if (events & EPOLLIN)
             {
 				cout<<"handleInputImp"<<endl;
@@ -169,6 +177,7 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
             //发包
             if (events & EPOLLOUT)
             {
+				cout<<"handleOutputImp"<<endl;
                 handleOutputImp(pTransceiver);
             }
 
@@ -194,6 +203,8 @@ void CommunicatorEpoll::handleInputImp(Transceiver * pTransceiver)
 
 void CommunicatorEpoll::handleOutputImp(Transceiver * pTransceiver)
 {
+	pTransceiver->doRequest();
+
 }
 
 
