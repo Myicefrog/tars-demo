@@ -66,8 +66,8 @@ void AsyncProcThread::run()
         {
             try
             {
-                ReqMessagePtr msgPtr = msg;
-                msg->callback->onDispatch(msgPtr);
+                //ReqMessagePtr msgPtr = msg;
+                //msg->callback->onDispatch(msgPtr);
             }
             catch (exception& e)
             {

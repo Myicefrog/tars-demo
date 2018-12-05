@@ -3,6 +3,7 @@
 
 #include "Message.h"
 #include "Global.h"
+#include "tc_thread.h"
 
 namespace tars
 {

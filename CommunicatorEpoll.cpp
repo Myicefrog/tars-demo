@@ -1,11 +1,12 @@
 #include "CommunicatorEpoll.h"
+#include "AsyncProcThread.h"
 
 using namespace std;
 
 namespace tars
 {
 CommunicatorEpoll::CommunicatorEpoll(size_t netThreadSeq)
-: _communicator(pCommunicator)
+//: _communicator(pCommunicator)
 {
     _ep.create(1024);
 
@@ -26,7 +27,7 @@ CommunicatorEpoll::CommunicatorEpoll(size_t netThreadSeq)
     //创建异步线程
     for(size_t i = 0; i < _asyncThreadNum; ++i)
     {
-        _asyncThread[i] = new AsyncProcThread(iAsyncQueueCap);
+        _asyncThread[i] = new AsyncProcThread(10000);
         _asyncThread[i]->start();
     }
 

@@ -2,6 +2,7 @@
 #define __TARS_MESSAGE_H_
 #include "Global.h"
 #include "tc_loop_queue.h"
+#include "tc_monitor.h"
 #include <string>
 #include <memory>
 
@@ -42,9 +43,9 @@ struct ReqMessage
     ReqMessage()
     : eStatus(ReqMessage::REQ_REQ)
     , eType(SYNC_CALL)
-    , callback(NULL)
-    , proxy(NULL)
-    , pObjectProxy(NULL)
+//    , callback(NULL)
+//    , proxy(NULL)
+//    , pObjectProxy(NULL)
     , pMonitor(NULL)
     , bMonitorFin(false)
     , bPush(false)
@@ -71,14 +72,14 @@ struct ReqMessage
         eStatus        = ReqMessage::REQ_REQ;
         eType          = eCallType;
 
-        callback       = NULL;
-        proxy          = NULL;
-        pObjectProxy   = pObj;
+//        callback       = NULL;
+//        proxy          = NULL;
+//        pObjectProxy   = pObj;
 
         sReqData.clear();
         pMonitor       = NULL;
         bMonitorFin    = false;
-        adapter        = NULL;
+//        adapter        = NULL;
 
         bPush          = false;
 
@@ -88,10 +89,10 @@ struct ReqMessage
     ReqStatus                   eStatus;        //调用的状态
     CallType                    eType;          //调用类型
 
-    ServantProxyCallbackPtr     callback;       //异步调用时的回调对象
+//    ServantProxyCallbackPtr     callback;       //异步调用时的回调对象
 
-    ServantProxy *              proxy;          //调用的ServantProxy对象
-    ObjectProxy *               pObjectProxy;   //调用端的proxy对象
+//    ServantProxy *              proxy;          //调用的ServantProxy对象
+//    ObjectProxy *               pObjectProxy;   //调用端的proxy对象
 
     string               request;        //请求消息体
     string              response;       //响应消息体
@@ -101,11 +102,11 @@ struct ReqMessage
     ReqMonitor *                pMonitor;        //用于同步的monitor
     bool                        bMonitorFin;    //同步请求timewait是否结束
 
-    AdapterProxy *              adapter;        //调用的adapter
+//    AdapterProxy *              adapter;        //调用的adapter
     bool                        bPush;          //push back 消息
-}
-typedef shared_ptr<ReqMessage>          ReqMessagePtr;
-typedef TC_LoopQueue<ReqMessage*,1000>  ReqInfoQueue;
+};
+typedef shared_ptr<ReqMessage> ReqMessagePtr;
+typedef TC_LoopQueue< ReqMessage*,1000 >  ReqInfoQueue;
 }
 
 #endif
