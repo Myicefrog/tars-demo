@@ -1,5 +1,6 @@
 #include "CommunicatorEpoll.h"
 #include "AsyncProcThread.h"
+#include "ObjectProxy.h"
 
 using namespace std;
 
@@ -52,6 +53,26 @@ void CommunicatorEpoll::delFd(int fd, FDInfo * info, uint32_t events)
     _ep.del(fd,(uint64_t)info,events);
 }
 
+void CommunicatorEpoll::notify(size_t iSeq,ReqInfoQueue * msgQueue)
+{
+    if(_notify[iSeq].bValid)
+    {
+        _ep.mod(_notify[iSeq].notify.getfd(),(long long)&_notify[iSeq].stFDInfo, EPOLLIN);
+        assert(_notify[iSeq].stFDInfo.p == (void*)msgQueue);
+    }
+    else
+    {
+        _notify[iSeq].stFDInfo.iType   = FDInfo::ET_C_NOTIFY;
+        _notify[iSeq].stFDInfo.p       = (void*)msgQueue;
+        _notify[iSeq].stFDInfo.fd      = _notify[iSeq].eventFd;
+        _notify[iSeq].stFDInfo.iSeq    = iSeq;
+        _notify[iSeq].notify.createSocket();
+        _notify[iSeq].bValid           = true;
+
+        _ep.add(_notify[iSeq].notify.getfd(),(long long)&_notify[iSeq].stFDInfo, EPOLLIN);
+    }
+}
+
 void CommunicatorEpoll::run()
 {
     while (true)
@@ -71,6 +92,7 @@ void CommunicatorEpoll::run()
                     continue; //data非指针, 退出循环
                 }
 
+				cout<<"CommunicatorEpoll handle"<<endl;
                 handle((FDInfo*)data, ev.events);
             }
         }
@@ -119,8 +141,8 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
 
                         return;
                     }
-
-                    //msg->pObjectProxy->invoke(msg);
+					cout<<"msg->request is "<<msg->request<<endl;
+                    msg->pObjectProxy->invoke(msg);
                 }
             }
             catch(exception & e)
@@ -135,6 +157,7 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
             //先收包
             if (events & EPOLLIN)
             {
+//AdapterProxy::AdapterProxy-->_trans
             	handleInputImp();
             }
 

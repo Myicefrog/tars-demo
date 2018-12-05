@@ -482,8 +482,8 @@ void TC_EpollServer::NetThread::run()
 	{
 		int iEvNum = _epoller.wait(2000);
 	
-		cout<<"iEvNum is "<<iEvNum<<endl;
-	
+
+
 		for(int i = 0; i < iEvNum; ++i)
 		{
 			const epoll_event &ev = _epoller.get(i);	

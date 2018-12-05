@@ -45,7 +45,7 @@ struct ReqMessage
     , eType(SYNC_CALL)
 //    , callback(NULL)
 //    , proxy(NULL)
-//    , pObjectProxy(NULL)
+    , pObjectProxy(NULL)
     , pMonitor(NULL)
     , bMonitorFin(false)
     , bPush(false)
@@ -67,7 +67,8 @@ struct ReqMessage
     /*
      * 初始化
      */
-    void init(CallType eCallType, ObjectProxy * pObj, const string & sFuncName)
+    //void init(CallType eCallType, ObjectProxy * pObj, const string & sFuncName)
+    void init(CallType eCallType)
     {
         eStatus        = ReqMessage::REQ_REQ;
         eType          = eCallType;
@@ -92,7 +93,7 @@ struct ReqMessage
 //    ServantProxyCallbackPtr     callback;       //异步调用时的回调对象
 
 //    ServantProxy *              proxy;          //调用的ServantProxy对象
-//    ObjectProxy *               pObjectProxy;   //调用端的proxy对象
+    ObjectProxy *               pObjectProxy;   //调用端的proxy对象
 
     string               request;        //请求消息体
     string              response;       //响应消息体

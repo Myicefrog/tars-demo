@@ -12,7 +12,7 @@ using namespace tars;
 
 int NetworkUtil::createSocket(bool udp, bool isLocal/* = false*/)
 {
-    int fd;
+    int fd = socket((isLocal ? PF_LOCAL : PF_INET), SOCK_STREAM, IPPROTO_TCP);
 
     if (fd == INVALID_SOCKET)
     {
@@ -107,12 +107,18 @@ bool NetworkUtil::doConnect(int fd, const struct sockaddr_in& addr)
 {
     bool bConnected = false;
 
+	cout<<"doConnect fd is "<<fd<<endl;
+
     int iRet = ::connect(fd, (struct sockaddr*)(&addr), int(sizeof(addr)));
+
+	cout<<"doConnect iRet is "<<iRet<<endl;
+	cout<<"doConnect errno is "<<errno<<endl;
 
     if (iRet == 0)
     {
         bConnected  = true;
     }
+	//EINPROGRESS=115 当链接设置为非阻塞时，目标没有及时应答，返回此错误，socket可以继续使
     else if (iRet == -1 && errno != EINPROGRESS)
     {
         ::close(fd);

@@ -87,12 +87,13 @@ public:
 
 	virtual ~CommunicatorEpoll();
 
-
 	virtual void run();
 
 	void addFd(int fd,FDInfo * info, uint32_t events);
 
 	void delFd(int fd,FDInfo * info, uint32_t events);
+
+	void notify(size_t iSeq,ReqInfoQueue * pReqQueue);
 
 protected:
 
