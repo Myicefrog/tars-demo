@@ -1,5 +1,6 @@
 #include "Transceiver.h"
 #include "ObjectProxy.h"
+#include<sys/uio.h>
 
 namespace tars
 {

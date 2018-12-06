@@ -8,6 +8,8 @@ namespace tars
 {
 CommunicatorEpoll::CommunicatorEpoll(size_t netThreadSeq)
 //: _communicator(pCommunicator)
+: _asyncThreadNum(3)
+, _asyncSeq(0)
 {
     _ep.create(1024);
 
@@ -218,5 +220,16 @@ void CommunicatorEpoll::handleOutputImp(Transceiver * pTransceiver)
 
 }
 
+void CommunicatorEpoll::pushAsyncThreadQueue(ReqMessage * msg)
+{
+    //先不考虑每个线程队列数目不一致的情况
+    _asyncThread[_asyncSeq]->push_back(msg);
+    _asyncSeq ++;
+
+    if(_asyncSeq == _asyncThreadNum)
+    {
+        _asyncSeq = 0;
+    }
+}
 
 }

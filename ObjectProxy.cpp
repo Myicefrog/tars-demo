@@ -64,10 +64,18 @@ void ObjectProxy::finishInvoke(const string& rsp)
 
 void ObjectProxy::finishInvoke(ReqMessage * msg)
 {
-	TC_ThreadLock::Lock sync(*(msg->pMonitor));
-    msg->pMonitor->notify();
-    msg->bMonitorFin = true;	
-	return ;
+	if(msg->eType == ReqMessage::SYNC_CALL)
+	{
+		TC_ThreadLock::Lock sync(*(msg->pMonitor));
+    	msg->pMonitor->notify();
+    	msg->bMonitorFin = true;	
+		return ;
+	}
+
+	if(msg->eType == ReqMessage::ASYNC_CALL)
+	{
+		getCommunicatorEpoll()->pushAsyncThreadQueue(msg);
+	}
 }
 
 }

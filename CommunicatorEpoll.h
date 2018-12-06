@@ -94,6 +94,8 @@ public:
 	void delFd(int fd,FDInfo * info, uint32_t events);
 
 	void notify(size_t iSeq,ReqInfoQueue * pReqQueue);
+
+	void pushAsyncThreadQueue(ReqMessage * msg);
 	
 
 protected:
@@ -115,6 +117,9 @@ protected:
 	size_t 					_asyncThreadNum;
 
 	AsyncProcThread *      _asyncThread[1024];
+
+	size_t                 _asyncSeq;
+
 };
 
 
