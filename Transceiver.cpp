@@ -100,6 +100,74 @@ int Transceiver::send(const void* buf, uint32_t len, uint32_t flag)
 
 }
 
+int Transceiver::doResponse(list<string>& done)
+{
+	int iRet = 0;
+	
+	done.clear();
+	
+	do
+	{
+		_recvBuffer.AssureSpace(8 * 1024);
+		char stackBuffer[64 * 1024];
+
+		struct  iovec vecs[2];
+		vecs[0].iov_base = _recvBuffer.WriteAddr();
+		vecs[0].iov_len = _recvBuffer.WritableSize();
+		vecs[1].iov_base = stackBuffer;
+		vecs[1].iov_len = sizeof stackBuffer;
+
+		if( (iRet = this->readv(vecs,2)) > 0 )
+		{
+			if(static_cast<size_t>(iRet) <= vecs[0].iov_len)
+			{
+				_recvBuffer.Produce(iRet);
+			}
+			else
+			{
+				_recvBuffer.Produce(vecs[0].iov_len);
+				size_t stackBytes = static_cast<size_t>(iRet) - vecs[0].iov_len;
+				_recvBuffer.PushData(stackBuffer,stackBytes);
+			}
+		}
+	
+	}
+	while (iRet>0);	
+
+	if(!_recvBuffer.IsEmpty())
+	{
+			const char* data = _recvBuffer.ReadAddr();
+			size_t len = _recvBuffer.ReadableSize();
+			done.push_back(string(data,len));
+
+			if(len > 0)
+			{
+				_recvBuffer.Consume(len);
+				if(_recvBuffer.Capacity() > 8 * 1024 * 1024)
+				{
+					_recvBuffer.Shrink();
+				}
+			}
+
+	}
+	
+	return done.empty()?0:1;
+}
+
+int Transceiver::readv(const struct iovec* vecs, int32_t vcnt)
+{
+    int iRet = ::readv(_fd, vecs, vcnt);
+
+    if (iRet == 0 || (iRet < 0 && errno != EAGAIN))
+    {
+
+        close();
+
+        return 0;
+    }
+
+    return iRet;
+}
 
 
 }

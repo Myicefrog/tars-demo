@@ -2,8 +2,10 @@
 #define __TARS_TRANSCEIVER_H_
 
 #include <list>
+#include <string>
 #include "NetworkUtil.h"
 #include "CommunicatorEpoll.h"
+#include "tc_buffer.h"
 
 using namespace std;
 
@@ -49,7 +51,10 @@ public:
 	int sendRequest(const char * pData,size_t iSize, bool forceSend = false);
 	
 	virtual int send(const void* buf, uint32_t len, uint32_t flag);
+	
+	virtual int doResponse(list<string>& done);
 
+	int readv(const struct iovec*, int32_t count);
 
 protected:
 
@@ -62,9 +67,11 @@ protected:
 	
 	string 					_sendBuffer;
 	
-	string 					_recvBuffer;
+	//string 					_recvBuffer;
 
 	ObjectProxy*                           _objectProxy;
+	
+	TC_Buffer                _recvBuffer;
 };
 
 }

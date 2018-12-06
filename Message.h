@@ -43,12 +43,11 @@ struct ReqMessage
     ReqMessage()
     : eStatus(ReqMessage::REQ_REQ)
     , eType(SYNC_CALL)
-//    , callback(NULL)
-//    , proxy(NULL)
     , pObjectProxy(NULL)
     , pMonitor(NULL)
     , bMonitorFin(false)
-    , bPush(false)
+    , iBeginTime(0)
+	, iRequestId(1)
     {
     }
 
@@ -73,16 +72,12 @@ struct ReqMessage
         eStatus        = ReqMessage::REQ_REQ;
         eType          = eCallType;
 
-//        callback       = NULL;
-//        proxy          = NULL;
-//        pObjectProxy   = pObj;
-
         sReqData.clear();
         pMonitor       = NULL;
         bMonitorFin    = false;
-//        adapter        = NULL;
+		iBeginTime     = 0;
 
-        bPush          = false;
+		iRequestId     = 1;
 
     }
 
@@ -90,9 +85,6 @@ struct ReqMessage
     ReqStatus                   eStatus;        //调用的状态
     CallType                    eType;          //调用类型
 
-//    ServantProxyCallbackPtr     callback;       //异步调用时的回调对象
-
-//    ServantProxy *              proxy;          //调用的ServantProxy对象
     ObjectProxy *               pObjectProxy;   //调用端的proxy对象
 
     string               request;        //请求消息体
@@ -102,9 +94,11 @@ struct ReqMessage
 
     ReqMonitor *                pMonitor;        //用于同步的monitor
     bool                        bMonitorFin;    //同步请求timewait是否结束
+	
+	int64_t                     iBeginTime;
 
-//    AdapterProxy *              adapter;        //调用的adapter
-    bool                        bPush;          //push back 消息
+
+	int                         iRequestId;
 };
 typedef shared_ptr<ReqMessage> ReqMessagePtr;
 typedef TC_LoopQueue< ReqMessage*,1000 >  ReqInfoQueue;

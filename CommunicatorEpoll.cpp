@@ -198,6 +198,17 @@ void CommunicatorEpoll::handle(FDInfo * pFDInfo, uint32_t events)
 
 void CommunicatorEpoll::handleInputImp(Transceiver * pTransceiver)
 {
+	list<string> done;	
+	if(pTransceiver->doResponse(done) > 0)
+    {	
+        list<string>::iterator it = done.begin();
+        for (; it != done.end(); ++it)
+        {
+			string response = *it;
+			pTransceiver->getObjProxy()->finishInvoke(response);	
+				
+        }
+	}
 }
 
 
