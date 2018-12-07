@@ -2,7 +2,6 @@
 #define __TARS_ASYNC_PROC_THREAD_H_
 
 #include "Message.h"
-#include "Global.h"
 #include "tc_thread.h"
 
 namespace tars

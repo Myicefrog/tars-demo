@@ -1,4 +1,5 @@
 #include "AsyncProcThread.h"
+#include "ServantProxy.h"
 #include <iostream>
 
 using namespace std;
@@ -66,8 +67,8 @@ void AsyncProcThread::run()
         {
             try
             {
-                //ReqMessagePtr msgPtr = msg;
-                //msg->callback->onDispatch(msgPtr);
+				std::shared_ptr<ReqMessage> msgPtr(msg);
+                msg->callback->onDispatch(msgPtr);
             }
             catch (exception& e)
             {

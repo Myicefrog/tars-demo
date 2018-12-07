@@ -43,6 +43,7 @@ struct ReqMessage
     ReqMessage()
     : eStatus(ReqMessage::REQ_REQ)
     , eType(SYNC_CALL)
+	, callback(NULL)
     , pObjectProxy(NULL)
     , pMonitor(NULL)
     , bMonitorFin(false)
@@ -71,7 +72,7 @@ struct ReqMessage
     {
         eStatus        = ReqMessage::REQ_REQ;
         eType          = eCallType;
-
+		callback       = NULL;
         sReqData.clear();
         pMonitor       = NULL;
         bMonitorFin    = false;
@@ -84,6 +85,8 @@ struct ReqMessage
 
     ReqStatus                   eStatus;        //调用的状态
     CallType                    eType;          //调用类型
+
+	ServantProxyCallbackPtr     callback;
 
     ObjectProxy *               pObjectProxy;   //调用端的proxy对象
 

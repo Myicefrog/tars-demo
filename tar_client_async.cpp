@@ -2,9 +2,38 @@
 #include <string>
 #include "CommunicatorEpoll.h"
 #include "ObjectProxy.h"
+#include "ServantProxy.h"
+
 
 using namespace std;
 using namespace tars;
+
+class HelloPrxCallback: public tars::ServantProxyCallback
+{
+public:
+
+	virtual ~HelloPrxCallback(){}
+
+    virtual void callback_testHello(const std::string& sRsp)
+    {
+        cout<<"callback_testHello :"<< "sRsp:" << sRsp <<endl; 
+    }	
+	
+public:
+
+	virtual int onDispatch(tars::ReqMessagePtr msg)
+	{
+		string sRsp = msg->response;
+		
+		callback_testHello(sRsp);
+
+		return 0;
+	}	
+};
+
+typedef shared_ptr<HelloPrxCallback> HelloPrxCallbackPtr;
+
+
 
 int main()
 {
@@ -15,9 +44,13 @@ int main()
 
 //////////////////////////////////////////////////////////////////////
 	
+	HelloPrxCallbackPtr cb = make_shared<HelloPrxCallback>();
+
 	ReqMessage * msg = new ReqMessage();
 
 	msg->init(ReqMessage::ASYNC_CALL);
+
+	msg->callback = cb; 
 
 	//msg->request = "hello";
 	msg->request = "hello,world";
@@ -70,4 +103,6 @@ int main()
 	
 		return 0;
 	}
+
+	getchar();
 }
